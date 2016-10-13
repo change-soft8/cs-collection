@@ -1,0 +1,28 @@
+{
+  "name": "cs-collection",
+  "version": "1.0.1",
+  "description": "集合组件",
+  "main": "build/localstorage.js",
+  "scripts": {
+    "build": "npm run build:umd && npm run build:umd:min",
+    "build:umd": "webpack src/localstorage.js dist/cs-collection.js",
+    "build:umd:min": "webpack src/localstorage.js dist/cs-collection.min.js -p",
+    "publish": "npm run build && npm run adduser",
+    "adduser": "npm owner add shenjiafang"
+  },
+  "author": "cs_team",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.10.1",
+    "babel-core": "^6.10.4",
+    "babel-loader": "^6.2.4",
+    "babel-preset-es2015": "^6.9.0",
+    "babel-preset-react": "^6.11.1",
+    "babel-preset-stage-0": "^6.5.0",
+    "webpack": "^1.13.1"
+  },
+  "dependencies": {
+    "immutable": "^3.8.1",
+    "pubsub-js": "^1.5.3"
+  }
+}

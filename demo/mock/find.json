@@ -1,0 +1,42 @@
+{
+    "millis": 34,
+    "code": "SUCCESS",
+    "message": "操作成功",
+    "entity": {
+        "projectInfoList": [{
+            "projectId": "ZERnAX4QWeQJ78ACRBzmKwPEXfm3ndjrtMnPpcH",
+            "projectName": "Yrb7mePDezkpjS6Fa",
+            "projectManager": "cwjnSaCZGdpkAzw8cxxHY8naE4z6",
+            "projectManagerIcon": "hhE8J8GAXXbypzJyTBHHRd4",
+            "projectStatus": "4pMkG2b6cy4F8T3jPPNhARXmDAzQMBbGWPeFbi2QazaYn",
+            "projectImportanceLevel": "kat2PyKQ7Kb6xyJJ3jtd5ZRTxyN6e",
+            "projectIcon": "S8mchRANTttxbMXR7Rz7HJD6S4FNBDX4Zftr",
+            "projectTagList": "",
+            "projectMember": "",
+            "members": 114,
+            "projectManagerLoginName": "6ZzNbRhJ7p7C45z6y5Cn",
+            "projectNameSpace": "6xRAfGbd3mCcWMdJcFKtmpAJHZKRicW4skCadsWx",
+            "projectNameForShirt": "caKwikzj5iDMCzGAr",
+            "projectCode": "m2ZhwZWXS2cEJ3EhkkF3NYZb8xxsrCKxMYyY6ZE2B7CR",
+            "commonFlag": "HeAwC",
+            "cacheTime": 1476254447098
+        }, {
+            "projectId": "ZERnAX4QWeQJ78ACRBzmKwPEXfm3ndjrtMnPpcI",
+            "projectName": "Yrb7mePDezkpjS6Fb",
+            "projectManager": "cwjnSaCZGdpkAzw8cxxHY8naE4z6",
+            "projectManagerIcon": "hhE8J8GAXXbypzJyTBHHRd4",
+            "projectStatus": "4pMkG2b6cy4F8T3jPPNhARXmDAzQMBbGWPeFbi2QazaYn",
+            "projectImportanceLevel": "kat2PyKQ7Kb6xyJJ3jtd5ZRTxyN6e",
+            "projectIcon": "S8mchRANTttxbMXR7Rz7HJD6S4FNBDX4Zftr",
+            "projectTagList": "",
+            "projectMember": "",
+            "members": 115,
+            "projectManagerLoginName": "6ZzNbRhJ7p7C45z6y5Cn",
+            "projectNameSpace": "6xRAfGbd3mCcWMdJcFKtmpAJHZKRicW4skCadsWx",
+            "projectNameForShirt": "caKwikzj5iDMCzGAr",
+            "projectCode": "m2ZhwZWXS2cEJ3EhkkF3NYZb8xxsrCKxMYyY6ZE2B7CR",
+            "commonFlag": "HeAwC",
+            "cacheTime": 1476254447099
+        }]
+    }
+}
