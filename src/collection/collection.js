@@ -97,9 +97,9 @@ export default class Collection {
         Collection.clearCacheData(this.colName, 'findOne');
 
         // 调用持久化对象 查询 数据详情
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // mock数据
-            let mock = Persist.findOne(this.colName, doc);
+            let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -112,15 +112,15 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.findOne(this.colName, doc).then(((data) => {
+            return Persist.findOne(this.colName, doc, this.pubsubKey('findOne')).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
             }).bind(this));
-        }
+        }*/
 
-        /*// 模仿数据
-        let data = Persist.findOne(this.colName, doc);
-        PubSub.publish(this.pubsubKey('findOne'), data.nowItems);*/
+        // 模仿数据
+        let data = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
+        PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
     }
 
     /**
@@ -175,9 +175,9 @@ export default class Collection {
         Collection.clearCacheData(this.colName, 'find');
 
         // 调用持久化对象 查询 数据详情
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // mock数据
-            let mock = Persist.find(this.colName, doc);
+            let mock = Persist.find(this.colName, doc, this.pubsubKey('find'));
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -192,29 +192,15 @@ export default class Collection {
 
         } else {
             // 调用持久化对象 查询 数据详情
-            return Persist.find(this.colName, query, this).then(((data) => {
+            return Persist.find(this.colName, query, this.pubsubKey('find')).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey('find'), data.nowItems);
-
-                // if (Array.isArray(res)) { // 从缓存获取数据
-                //         // 向集合放入新数据
-                //         this.items = res;
-                //     } else { // 从接口获得的数据
-                //         // 向集合放入新数据
-                //         this.items.push(res.data);
-                //         // 设置过期时间
-                //         if (res.timeout) {
-                //             this.timeout = res.timeout;
-                //         }
-                //     }
-                // }).bind(this)).catch(((error) => {
-                //     // console.log(error)
             }).bind(this));
-        }
+        }*/
 
-        /*// 模仿数据
-        let data = Persist.find(this.colName, doc);
-        PubSub.publish(this.pubsubKey('find'), data.nowItems);*/
+        // 模仿数据
+        let data = Persist.find(this.colName, doc, this.pubsubKey('find'));
+        PubSub.publish(this.pubsubKey('find'), data.nowItems);
     }
 
     /**
@@ -226,7 +212,7 @@ export default class Collection {
         // 清缓存
         Collection.clearCacheData(this.colName, 'insert');
         // 调用持久化对象 查询 数据详情
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // mock
             let mock = Persist.insert(this.colName, doc);
             if (mock) {
@@ -241,15 +227,22 @@ export default class Collection {
                 }
             }
         } else {
+            // 请求次数
+            let num = Persist.getRequestNum(this.colName);
+
             return Persist.insert(this.colName, doc).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey('insert'), data.nowItems);
             }).bind(this));
-        }
+        }*/
 
-        /*// 模仿数据
-        let data = Persist.insert(this.colName, doc);
-        PubSub.publish(this.pubsubKey('insert'), data.nowItems);*/
+        /*== 模仿数据 ==*/
+        // 请求次数
+        let num = Persist.getRequestNum(this.colName);
+        for (var i = 0; i < num; i++) {
+            let data = Persist.insert(this.colName, doc);
+            PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+        }
     }
 
     /**
@@ -296,7 +289,7 @@ export default class Collection {
         // 清缓存
         Collection.clearCacheData(this.colName, 'remove');
         // 调用持久对象，更新单条数据
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // mock
             let mock = Persist.remove(this.colName, doc);
             if (mock) {
@@ -311,14 +304,21 @@ export default class Collection {
                 }
             }
         } else {
+            // 请求次数
+            let num = Persist.getRequestNum(this.colName);
+
             return Persist.remove(this.colName, doc).then(((data) => {
                 // 集合变更，发布事件
                 PubSub.publish(this.pubsubKey('remove'), data.nowItems);
             }).bind(this));
-        }
+        }*/
 
-        /*// 模拟数据
-        let data = Persist.remove(this.colName, doc);
-        PubSub.publish(this.pubsubKey('remove'), data.nowItems);*/
+        /*== 模仿数据 ==*/
+        // 请求次数
+        let num = Persist.getRequestNum(this.colName);
+        for (var i = 0; i < num; i++) {
+            let data = Persist.remove(this.colName, doc);
+            PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+        }
     }
 }

@@ -7,7 +7,7 @@
 		exports["CsCollection"] = factory(require("Immutable"), require("PubSub"));
 	else
 		root["CsCollection"] = factory(root["Immutable"], root["PubSub"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_6__, __WEBPACK_EXTERNAL_MODULE_9__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_6__, __WEBPACK_EXTERNAL_MODULE_8__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -174,11 +174,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _collectionUtils2 = _interopRequireDefault(_collectionUtils);
 
-	var _query = __webpack_require__(8);
+	var _query = __webpack_require__(9);
 
 	var _query2 = _interopRequireDefault(_query);
 
-	var _pubsubJs = __webpack_require__(9);
+	var _pubsubJs = __webpack_require__(8);
 
 	var _pubsubJs2 = _interopRequireDefault(_pubsubJs);
 
@@ -260,36 +260,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * @return {[type]}     [description]
 	         */
 	        value: function findOne(doc) {
-	            var _this = this;
-
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'findOne');
 
 	            // 调用持久化对象 查询 数据详情
-	            if (_persist2.default.isMock) {
+	            /*if (Persist.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.findOne(this.colName, doc);
+	                let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
 	                if (mock) {
-	                    if (typeof mock.then === 'function') {
-	                        return mock.then(function (data) {
+	                    if (typeof(mock.then) === 'function') {
+	                        return mock.then(((data) => {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
-	                        }.bind(this));
+	                            PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+	                        }).bind(this));
 	                    } else {
 	                        // 集合变更发布事件
-	                        _pubsubJs2.default.publish(this.pubsubKey('findOne'), mock.nowItems);
+	                        PubSub.publish(this.pubsubKey('findOne'), mock.nowItems);
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.findOne(this.colName, doc).then(function (data) {
+	                return Persist.findOne(this.colName, doc, this.pubsubKey('findOne')).then(((data) => {
 	                    // 集合变更发布事件
-	                    _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
-	                }.bind(this));
-	            }
+	                    PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+	                }).bind(this));
+	            }*/
 
-	            /*// 模仿数据
-	            let data = Persist.findOne(this.colName, doc);
-	            PubSub.publish(this.pubsubKey('findOne'), data.nowItems);*/
+	            // 模仿数据
+	            var data = _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'));
+	            _pubsubJs2.default.publish(this.pubsubKey('findOne'), data.nowItems);
 	        }
 
 	        /**
@@ -302,8 +300,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'find',
 	        value: function find(doc, rtSet) {
-	            var _this2 = this;
-
 	            // 不符合查询规则
 	            if (!doc || !(typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) == "object") return false;
 
@@ -349,45 +345,31 @@ return /******/ (function(modules) { // webpackBootstrap
 	            Collection.clearCacheData(this.colName, 'find');
 
 	            // 调用持久化对象 查询 数据详情
-	            if (_persist2.default.isMock) {
+	            /*if (Persist.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.find(this.colName, doc);
+	                let mock = Persist.find(this.colName, doc, this.pubsubKey('find'));
 	                if (mock) {
-	                    if (typeof mock.then === 'function') {
-	                        return mock.then(function (data) {
+	                    if (typeof(mock.then) === 'function') {
+	                        return mock.then(((data) => {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
-	                        }.bind(this));
+	                            PubSub.publish(this.pubsubKey('find'), data.nowItems);
+	                        }).bind(this));
 	                    } else {
 	                        // 集合变更发布事件
-	                        _pubsubJs2.default.publish(this.pubsubKey('find'), mock.nowItems);
+	                        PubSub.publish(this.pubsubKey('find'), mock.nowItems);
 	                    }
 	                }
-	            } else {
+	              } else {
 	                // 调用持久化对象 查询 数据详情
-	                return _persist2.default.find(this.colName, query, this).then(function (data) {
+	                return Persist.find(this.colName, query, this.pubsubKey('find')).then(((data) => {
 	                    // 集合变更发布事件
-	                    _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
+	                    PubSub.publish(this.pubsubKey('find'), data.nowItems);
+	                }).bind(this));
+	            }*/
 
-	                    // if (Array.isArray(res)) { // 从缓存获取数据
-	                    //         // 向集合放入新数据
-	                    //         this.items = res;
-	                    //     } else { // 从接口获得的数据
-	                    //         // 向集合放入新数据
-	                    //         this.items.push(res.data);
-	                    //         // 设置过期时间
-	                    //         if (res.timeout) {
-	                    //             this.timeout = res.timeout;
-	                    //         }
-	                    //     }
-	                    // }).bind(this)).catch(((error) => {
-	                    //     // console.log(error)
-	                }.bind(this));
-	            }
-
-	            /*// 模仿数据
-	            let data = Persist.find(this.colName, doc);
-	            PubSub.publish(this.pubsubKey('find'), data.nowItems);*/
+	            // 模仿数据
+	            var data = _persist2.default.find(this.colName, doc, this.pubsubKey('find'));
+	            _pubsubJs2.default.publish(this.pubsubKey('find'), data.nowItems);
 	        }
 
 	        /**
@@ -399,35 +381,39 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'insert',
 	        value: function insert(doc) {
-	            var _this3 = this;
-
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'insert');
 	            // 调用持久化对象 查询 数据详情
-	            if (_persist2.default.isMock) {
+	            /*if (Persist.isMock) {
 	                // mock
-	                var mock = _persist2.default.insert(this.colName, doc);
+	                let mock = Persist.insert(this.colName, doc);
 	                if (mock) {
-	                    if (typeof mock.then === 'function') {
-	                        return mock.then(function (data) {
+	                    if (typeof(mock.then) === 'function') {
+	                        return mock.then(((data) => {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
-	                        }.bind(this));
+	                            PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+	                        }).bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
-	                        _pubsubJs2.default.publish(this.pubsubKey('insert'), mock.nowItems);
+	                        PubSub.publish(this.pubsubKey('insert'), mock.nowItems);
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.insert(this.colName, doc).then(function (data) {
+	                // 请求次数
+	                let num = Persist.getRequestNum(this.colName);
+	                  return Persist.insert(this.colName, doc).then(((data) => {
 	                    // 集合变更发布事件
-	                    _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
-	                }.bind(this));
-	            }
+	                    PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+	                }).bind(this));
+	            }*/
 
-	            /*// 模仿数据
-	            let data = Persist.insert(this.colName, doc);
-	            PubSub.publish(this.pubsubKey('insert'), data.nowItems);*/
+	            /*== 模仿数据 ==*/
+	            // 请求次数
+	            var num = _persist2.default.getRequestNum(this.colName);
+	            for (var i = 0; i < num; i++) {
+	                var data = _persist2.default.insert(this.colName, doc);
+	                _pubsubJs2.default.publish(this.pubsubKey('insert'), data.nowItems);
+	            }
 	        }
 
 	        /**
@@ -439,7 +425,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'update',
 	        value: function update(doc) {
-	            var _this4 = this;
+	            var _this = this;
 
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'update');
@@ -451,7 +437,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+	                            _pubsubJs2.default.publish(_this.pubsubKey('update'), data.nowItems);
 	                        }.bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
@@ -461,7 +447,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else {
 	                return _persist2.default.update(this.colName, doc).then(function (data) {
 	                    // 集合变更，发布事件
-	                    _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+	                    _pubsubJs2.default.publish(_this.pubsubKey('update'), data.nowItems);
 	                }.bind(this));
 	            }
 
@@ -479,35 +465,39 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'remove',
 	        value: function remove(doc) {
-	            var _this5 = this;
-
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'remove');
 	            // 调用持久对象，更新单条数据
-	            if (_persist2.default.isMock) {
+	            /*if (Persist.isMock) {
 	                // mock
-	                var mock = _persist2.default.remove(this.colName, doc);
+	                let mock = Persist.remove(this.colName, doc);
 	                if (mock) {
-	                    if (typeof mock.then === 'function') {
-	                        return mock.then(function (data) {
+	                    if (typeof(mock.then) === 'function') {
+	                        return mock.then(((data) => {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
-	                        }.bind(this));
+	                            PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+	                        }).bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
-	                        _pubsubJs2.default.publish(this.pubsubKey('remove'), mock.nowItems);
+	                        PubSub.publish(this.pubsubKey('remove'), mock.nowItems);
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.remove(this.colName, doc).then(function (data) {
+	                // 请求次数
+	                let num = Persist.getRequestNum(this.colName);
+	                  return Persist.remove(this.colName, doc).then(((data) => {
 	                    // 集合变更，发布事件
-	                    _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
-	                }.bind(this));
-	            }
+	                    PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+	                }).bind(this));
+	            }*/
 
-	            /*// 模拟数据
-	            let data = Persist.remove(this.colName, doc);
-	            PubSub.publish(this.pubsubKey('remove'), data.nowItems);*/
+	            /*== 模仿数据 ==*/
+	            // 请求次数
+	            var num = _persist2.default.getRequestNum(this.colName);
+	            for (var i = 0; i < num; i++) {
+	                var data = _persist2.default.remove(this.colName, doc);
+	                _pubsubJs2.default.publish(this.pubsubKey('remove'), data.nowItems);
+	            }
 	        }
 	    }], [{
 	        key: 'clearCacheData',
@@ -571,6 +561,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _collectionUtils2 = _interopRequireDefault(_collectionUtils);
 
 	var _immutable = __webpack_require__(6);
+
+	var _pubsubJs = __webpack_require__(8);
+
+	var _pubsubJs2 = _interopRequireDefault(_pubsubJs);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -742,7 +736,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        /**
 	         * [getCacheTimeOut 获得集合过期时间]
 	         * @param  {[type]} colName [集合名称]
-	         * @param  {[type]} oper    [操作名称]
 	         * @return {[type]}         [description]
 	         */
 
@@ -755,6 +748,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var en = col && col.entity;
 	            // 获得过期时间
 	            return en && en.cacheTimeOut;
+	        }
+
+	        /**
+	         * [getRequestNum 获得集合请求次数]
+	         * @param  {[type]} colName [集合名称]
+	         * @return {[type]}         [description]
+	         */
+
+	    }, {
+	        key: 'getRequestNum',
+	        value: function getRequestNum(colName) {
+	            // 获得集合相关配置
+	            var col = window.collectionConfig[colName];
+	            // 获得集合--entity
+	            var en = col && col.entity;
+	            // 获得请求次数
+	            return en && en.requestNum;
 	        }
 
 	        /**
@@ -935,45 +945,59 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [findOne 查询集合某数据详情]
 	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} doc     [单条数据]
+	         * @param  {[type]} pubkey     [发布key]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'findOne',
-	        value: function findOne(colName, doc) {
+	        value: function findOne(colName, doc, pubkey) {
 	            // 操作名称
 	            var p = 'findOne';
 
 	            // 如果需要返回mock数据
-	            if (Persist.isMock) {
+	            /*if (Persist.isMock) {
 	                // 生成相关mock数据
-	                var mock = Persist.mock(colName, p, doc);
-
-	                if (typeof mock === 'string') {
-	                    return $.getJSON(mock, null, function (data) {
+	                let mock = Persist.mock(colName, p, doc);
+	                  if (typeof(mock) === 'string') {
+	                    return $.getJSON(mock, null, (data) => {
 	                        // 返回相关操作数据
 	                        Persist.setFindOneData(colName, p, data);
-	                    });
+	                    })
 	                } else {
 	                    // 返回相关操作数据
 	                    return Persist.setFindOneData(colName, p, mock);
 	                }
-	            }
+	            }*/
 
+	            // 获取主键
+	            var key = Persist.getPrimaryKey(colName);
 	            // 获取主键值
 	            var param = Persist.getPrimaryKeyValue(colName, doc);
+
+	            var db = window.db && window.db[colName] && window.db[colName].items;
+	            var parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
+	            if (db && db.size > 0) {
+	                db.forEach(function (val, i) {
+	                    if (val[key] == parammock) {
+	                        //目前模仿第一条数据，到时候parammock改为param
+	                        _pubsubJs2.default.publish(pubkey, (0, _immutable.Map)(val));
+	                    }
+	                });
+	            }
+
 	            // 执行ajax请求查询某集合数据详情    
-	            return $.get(Persist.getUrl(colName, 'findOne', param), null, function (data) {
+	            /*return $.get(Persist.getUrl(colName, 'findOne', param), null, (data) => {
 	                if (data.code === 'SUCCESS') {
 	                    Persist.setFindOneData(colName, p, data);
 	                }
-	            });
+	            });*/
 
 	            // 模拟数据
-	            /*let data = { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 1, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca956e00caa0156e8be040400dd", "projectName": "来，跟我一起说：耶~", "projectManager": "沈佳芳2233", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "sjzmdqkk", "projectNameForShirt": "sjzmd", "projectCode": "wyqkk", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
+	            var data = { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 1, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca956e00caa0156e8be040400dd", "projectName": "来，跟我一起说：耶~", "projectManager": "沈佳芳2233", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "sjzmdqkk", "projectNameForShirt": "sjzmd", "projectCode": "wyqkk", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
 	            if (data.code === 'SUCCESS') {
 	                return Persist.setFindOneData(colName, p, data);
-	            }*/
+	            }
 	        }
 
 	        /**
@@ -1011,8 +1035,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                _collectionUtils2.default.setLocalData(colName, arr.extend);
 	            }
 
-	            var newArr = new Array(newdb);
-	            data.nowItems = (0, _immutable.List)(newArr);
+	            data.nowItems = (0, _immutable.Map)(newdb);
 
 	            return data;
 	        }
@@ -1021,56 +1044,50 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [find 查询数据集合]
 	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} doc     [数据参数]
+	         * @param  {[type]} pubkey     [发布key]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'find',
-	        value: function find(colName, doc, colEntity) {
+	        value: function find(colName, doc, pubkey) {
 	            // 操作名称
 	            var p = 'find';
 
 	            // 如果需要返回mock数据
-	            if (Persist.isMock) {
+	            /*if (Persist.isMock) {
 	                // 生成相关mock数据
-	                var mock = Persist.mock(colName, p, doc);
-
-	                if (typeof mock === 'string') {
-	                    return $.getJSON(mock, null, function (data) {
+	                let mock = Persist.mock(colName, p, doc);
+	                  if (typeof(mock) === 'string') {
+	                    return $.getJSON(mock, null, (data) => {
 	                        // 返回相关操作数据
 	                        Persist.setFindData(colName, p, data);
-	                    });
+	                    })
 	                } else {
 	                    // 返回相关操作数据
 	                    return Persist.setFindData(colName, p, mock);
 	                }
-	            }
-
-	            // 有缓存数据 && 缓存没有过期
-	            /*if (window.collectionConfig[colName][p]["fulldata"] && new Date().getTime() <= (colEntity.timeout || 0)) {
-	                // 获取缓存数据
-	                return new Promise((resolve, reject) => {
-	                    resolve(Utils.filterListKey(colEntity.items, doc));
-	                });
 	            }*/
 
+	            var db = window.db && window.db[colName] && window.db[colName].items;
+	            var match = _collectionUtils2.default.filterListKey(db, doc);
+
+	            if (match) {
+	                _pubsubJs2.default.publish(pubkey, match);
+	            }
+
 	            // 执行ajax请求查询某集合数据详情
-	            return $.get(Persist.getUrl(colName, p, doc), doc, function (data) {
+	            /*return $.get(Persist.getUrl(colName, p, doc), doc, (data) => {
 	                if (data.code === 'SUCCESS') {
 	                    Persist.setFindData(colName, p, data);
 	                }
-	                // }).then((res) => {
-	                //             // 设置过期时间
-	                //             if (window.collectionConfig[colName][p]["fulldata"]) {
-	                //                 res.timeout = new Date().getTime() + window.collectionConfig[colName][p]["validate"];
-	                //             }
-	            });
+	            });*/
 
 	            // 模拟数据
-	            /*let data = { "millis": 40, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 3, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca9543dbb2901544b98df3d0963", "projectName": "莫道芳时易度，朝暮1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "test0425G30", "projectNameForShirt": "test", "projectCode": "test", "commonFlag": "16001" }, { "projectId": "8c8c8ca95429546201542d0888bc028d", "projectName": "何处几叶萧萧雨1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "123456jpg", "projectNameForShirt": "12", "projectCode": "123", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
+	            var data = { "millis": 40, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 3, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca9543dbb2901544b98df3d0963", "projectName": "莫道芳时易度，朝暮1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "test0425G30", "projectNameForShirt": "test", "projectCode": "test", "commonFlag": "16001" }, { "projectId": "8c8c8ca95429546201542d0888bc028d", "projectName": "何处几叶萧萧雨1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "123456jpg", "projectNameForShirt": "12", "projectCode": "123", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
 	            if (data.code === 'SUCCESS') {
 	                return Persist.setFindData(colName, p, data);
-	            }*/
+	            }
 	        }
 
 	        /**
@@ -1208,8 +1225,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    window.localStorage.setItem('db', JSON.stringify(window.db));
 	                }
 
-	                var newArr = new Array(one);
-	                data.nowItems = (0, _immutable.List)(newArr);
+	                data.nowItems = (0, _immutable.Map)(one);
 	                return data;
 	            } else {
 	                console.error('已存在此数据，不能重复新建！');
@@ -1283,12 +1299,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var d = data[sp];
 
 	            if (d && d.length > 0) {
-	                var newArr = new Array(_collectionUtils2.default.updateData(colName, d, key));
-	                data.nowItems = (0, _immutable.List)(newArr);
+	                data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.updateData(colName, d, key));
 	                return data;
 	            } else {
-	                var _newArr = new Array(_collectionUtils2.default.updateData(colName, doc, key));
-	                data.nowItems = (0, _immutable.List)(_newArr);
+	                data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.updateData(colName, doc, key));
 	                return data;
 	            }
 	        }
@@ -1317,13 +1331,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                if (typeof mock === 'string') {
 	                    return $.getJSON(mock, null, function (data) {
 	                        // 返回相关操作数据
-	                        var newArr = new Array(_collectionUtils2.default.removeData(colName, param, key));
-	                        data.nowItems = (0, _immutable.List)(newArr);
+	                        data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
 	                    });
 	                } else {
 	                    // 返回相关操作数据
-	                    var newArr = new Array(_collectionUtils2.default.removeData(colName, param, key));
-	                    mock.nowItems = (0, _immutable.List)(newArr);
+	                    mock.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
 	                    return mock;
 	                }
 	            }
@@ -1331,16 +1343,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情
 	            return $.delete(Persist.getUrl(colName, p, param), null, function (data) {
 	                if (data.code === 'SUCCESS') {
-	                    var _newArr2 = new Array(_collectionUtils2.default.removeData(colName, param, key));
-	                    data.nowItems = (0, _immutable.List)(_newArr2);
+	                    data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
 	                }
 	            });
 
 	            // 模拟数据
 	            /*let data = { "millis": 770, "code": "SUCCESS", "message": "操作成功", "entity": null };
 	            if (data.code === 'SUCCESS') {
-	                let newArr = new Array(Utils.removeData(colName, param, key));
-	                data.nowItems = List(newArr);
+	                data.nowItems = Map(Utils.removeData(colName, param, key));
 	                return data;
 	            }*/
 	        }
@@ -2035,9 +2045,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'filterListKey',
 	        value: function filterListKey(list, query) {
-
 	            if (!list || CollectionUtils.isEmpty(list) || !query) return;
-	            var result;
+
 	            if (_immutable.List.isList(list)) {
 	                return this.filterMapListKey(list, query);
 	            } else if (list.constructor == Array) {
@@ -2068,6 +2077,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                });
 	                return testHaskey;
 	            });
+
 	            return mapData;
 	        }
 
@@ -2241,14 +2251,24 @@ return /******/ (function(modules) { // webpackBootstrap
 	        key: 'isEmpty',
 	        value: function isEmpty(obj) {
 	            if (!obj) return true;
-	            if (this.isArray(obj)) {
-	                return obj.length == 0;
-	            } else if (this.isObject(obj)) {
-	                for (var name in obj) {
+
+	            if (_immutable.List.isList(obj) || _immutable.Map.isMap(obj)) {
+	                if (obj.size > 1) {
 	                    return false;
+	                } else {
+	                    return true;
 	                }
-	                return true;
+	            } else {
+	                if (this.isArray(obj)) {
+	                    return obj.length == 0;
+	                } else if (this.isObject(obj)) {
+	                    for (var name in obj) {
+	                        return false;
+	                    }
+	                    return true;
+	                }
 	            }
+
 	            return false;
 	        }
 	    }, {
@@ -2320,6 +2340,12 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 8 */
 /***/ function(module, exports) {
 
+	module.exports = __WEBPACK_EXTERNAL_MODULE_8__;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
 	"use strict";
 
 	Object.defineProperty(exports, "__esModule", {
@@ -2356,12 +2382,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	}();
 
 	exports.default = Query;
-
-/***/ },
-/* 9 */
-/***/ function(module, exports) {
-
-	module.exports = __WEBPACK_EXTERNAL_MODULE_9__;
 
 /***/ }
 /******/ ])

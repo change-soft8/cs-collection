@@ -96,14 +96,24 @@ var Utils = function () {
         key: 'isEmpty',
         value: function isEmpty(obj) {
             if (!obj) return true;
-            if (this.isArray(obj)) {
-                return obj.length == 0;
-            } else if (this.isObject(obj)) {
-                for (var name in obj) {
+
+            if (_immutable.List.isList(obj) || _immutable.Map.isMap(obj)) {
+                if (obj.size > 1) {
                     return false;
+                } else {
+                    return true;
                 }
-                return true;
+            } else {
+                if (this.isArray(obj)) {
+                    return obj.length == 0;
+                } else if (this.isObject(obj)) {
+                    for (var name in obj) {
+                        return false;
+                    }
+                    return true;
+                }
             }
+
             return false;
         }
     }, {

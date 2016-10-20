@@ -212,9 +212,8 @@ export default class CollectionUtils extends Utils {
      * @return {普通数组}       筛选出的数组
      */
     static filterListKey(list, query) {
-
         if (!list || CollectionUtils.isEmpty(list) || !query) return;
-        var result;
+
         if (List.isList(list)) {
             return this.filterMapListKey(list, query);
         } else if (list.constructor == Array) {
@@ -243,8 +242,8 @@ export default class CollectionUtils extends Utils {
             });
             return testHaskey;
         });
+        
         return mapData;
-
     }
 
     /**

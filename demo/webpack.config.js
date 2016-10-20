@@ -6,7 +6,7 @@ module.exports = {
     resolve: {
         extensions: ['', '.js', '.jsx']
     },
-    entry: "./index.jsx",
+    entry: ['babel-polyfill', 'webpack-hot-middleware/client', './index.jsx'],
     output: {
         path: path.resolve(__dirname),
         filename: "bundle.js",
@@ -15,13 +15,17 @@ module.exports = {
         loaders: [{
             test: /\.(js|jsx)/,
             exclude: /(node_modules|bower_components)/,
-            loaders: ['babel']
+            loader: 'babel'
+        }, {
+            test: /\.css$/,
+            loader: 'classnames-loader!style-loader!css-loader?modules!postcss-loader'
         }]
     },
     plugins: [
         new webpack.optimize.OccurrenceOrderPlugin(),
         new webpack.optimize.DedupePlugin(),
-        new webpack.optimize.UglifyJsPlugin({ minimize: true })
+        new webpack.optimize.UglifyJsPlugin({ minimize: true }),
+        new webpack.HotModuleReplacementPlugin()
     ],
     externals: [{
         'react': 'React',

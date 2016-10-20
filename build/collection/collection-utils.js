@@ -281,9 +281,8 @@ var CollectionUtils = function (_Utils) {
     }, {
         key: 'filterListKey',
         value: function filterListKey(list, query) {
-
             if (!list || CollectionUtils.isEmpty(list) || !query) return;
-            var result;
+
             if (_immutable.List.isList(list)) {
                 return this.filterMapListKey(list, query);
             } else if (list.constructor == Array) {
@@ -314,6 +313,7 @@ var CollectionUtils = function (_Utils) {
                 });
                 return testHaskey;
             });
+
             return mapData;
         }
 

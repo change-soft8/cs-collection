@@ -1,6 +1,7 @@
 import MockUtils from './mockUtils';
 import Utils from './collection-utils';
 import { Map, List } from 'immutable';
+import PubSub from 'pubsub-js';
 
 /**
  * 持久化数据对象
@@ -122,7 +123,7 @@ export default class Persist {
         // 获得集合操作mock结构数据存放字段
         let sp = Persist.getStoreParam(colName, oper);
         // 获取集合主键
-        let key = Persist.getPrimaryKey(colName);      
+        let key = Persist.getPrimaryKey(colName);
 
         // 如果没有return参数、return为null或者return为空对象
         if (!ret || $.isEmptyObject(ret)) {
@@ -198,7 +199,6 @@ export default class Persist {
     /**
      * [getCacheTimeOut 获得集合过期时间]
      * @param  {[type]} colName [集合名称]
-     * @param  {[type]} oper    [操作名称]
      * @return {[type]}         [description]
      */
     static getCacheTimeOut(colName) {
@@ -208,6 +208,20 @@ export default class Persist {
         let en = col && col.entity;
         // 获得过期时间
         return en && en.cacheTimeOut;
+    }
+
+    /**
+     * [getRequestNum 获得集合请求次数]
+     * @param  {[type]} colName [集合名称]
+     * @return {[type]}         [description]
+     */
+    static getRequestNum(colName) {
+        // 获得集合相关配置
+        let col = window.collectionConfig[colName];
+        // 获得集合--entity
+        let en = col && col.entity;
+        // 获得请求次数
+        return en && en.requestNum;
     }
 
     /**
@@ -370,14 +384,15 @@ export default class Persist {
      * [findOne 查询集合某数据详情]
      * @param  {[type]} colName [集合名称]
      * @param  {[type]} doc     [单条数据]
+     * @param  {[type]} pubkey     [发布key]
      * @return {[type]}         [description]
      */
-    static findOne(colName, doc) {
+    static findOne(colName, doc, pubkey) {
         // 操作名称
         let p = 'findOne';
 
         // 如果需要返回mock数据
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
@@ -390,22 +405,35 @@ export default class Persist {
                 // 返回相关操作数据
                 return Persist.setFindOneData(colName, p, mock);
             }
-        }
+        }*/
 
+        // 获取主键
+        let key = Persist.getPrimaryKey(colName);
         // 获取主键值
         let param = Persist.getPrimaryKeyValue(colName, doc);
+
+        let db = window.db && window.db[colName] && window.db[colName].items;
+        let parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
+        if (db && db.size > 0) {
+            db.forEach((val, i) => {
+                if (val[key] == parammock) { //目前模仿第一条数据，到时候parammock改为param
+                    PubSub.publish(pubkey, Map(val));
+                }
+            });
+        }
+
         // 执行ajax请求查询某集合数据详情    
-        return $.get(Persist.getUrl(colName, 'findOne', param), null, (data) => {
+        /*return $.get(Persist.getUrl(colName, 'findOne', param), null, (data) => {
             if (data.code === 'SUCCESS') {
                 Persist.setFindOneData(colName, p, data);
             }
-        });
+        });*/
 
         // 模拟数据
-        /*let data = { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 1, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca956e00caa0156e8be040400dd", "projectName": "来，跟我一起说：耶~", "projectManager": "沈佳芳2233", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "sjzmdqkk", "projectNameForShirt": "sjzmd", "projectCode": "wyqkk", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
+        let data = { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 1, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca956e00caa0156e8be040400dd", "projectName": "来，跟我一起说：耶~", "projectManager": "沈佳芳2233", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "sjzmdqkk", "projectNameForShirt": "sjzmd", "projectCode": "wyqkk", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
         if (data.code === 'SUCCESS') {
             return Persist.setFindOneData(colName, p, data);
-        }*/
+        }
     }
 
     /**
@@ -440,8 +468,7 @@ export default class Persist {
             Utils.setLocalData(colName, arr.extend);
         }
 
-        let newArr = new Array(newdb);
-        data.nowItems = List(newArr);
+        data.nowItems = Map(newdb);
 
         return data;
     }
@@ -450,14 +477,15 @@ export default class Persist {
      * [find 查询数据集合]
      * @param  {[type]} colName [集合名称]
      * @param  {[type]} doc     [数据参数]
+     * @param  {[type]} pubkey     [发布key]
      * @return {[type]}         [description]
      */
-    static find(colName, doc, colEntity) {
+    static find(colName, doc, pubkey) {
         // 操作名称
         let p = 'find';
 
         // 如果需要返回mock数据
-        if (Persist.isMock) {
+        /*if (Persist.isMock) {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
@@ -470,33 +498,27 @@ export default class Persist {
                 // 返回相关操作数据
                 return Persist.setFindData(colName, p, mock);
             }
-        }
-
-        // 有缓存数据 && 缓存没有过期
-        /*if (window.collectionConfig[colName][p]["fulldata"] && new Date().getTime() <= (colEntity.timeout || 0)) {
-            // 获取缓存数据
-            return new Promise((resolve, reject) => {
-                resolve(Utils.filterListKey(colEntity.items, doc));
-            });
         }*/
 
+        let db = window.db && window.db[colName] && window.db[colName].items;
+        let match = Utils.filterListKey(db, doc);
+
+        if (match) {
+            PubSub.publish(pubkey, match);
+        }
+
         // 执行ajax请求查询某集合数据详情
-        return $.get(Persist.getUrl(colName, p, doc), doc, (data) => {
+        /*return $.get(Persist.getUrl(colName, p, doc), doc, (data) => {
             if (data.code === 'SUCCESS') {
                 Persist.setFindData(colName, p, data);
             }
-            // }).then((res) => {
-            //             // 设置过期时间
-            //             if (window.collectionConfig[colName][p]["fulldata"]) {
-            //                 res.timeout = new Date().getTime() + window.collectionConfig[colName][p]["validate"];
-            //             }
-        });
+        });*/
 
         // 模拟数据
-        /*let data = { "millis": 40, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 3, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca9543dbb2901544b98df3d0963", "projectName": "莫道芳时易度，朝暮1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "test0425G30", "projectNameForShirt": "test", "projectCode": "test", "commonFlag": "16001" }, { "projectId": "8c8c8ca95429546201542d0888bc028d", "projectName": "何处几叶萧萧雨1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "123456jpg", "projectNameForShirt": "12", "projectCode": "123", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
+        let data = { "millis": 40, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 3, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca9543dbb2901544b98df3d0963", "projectName": "莫道芳时易度，朝暮1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "test0425G30", "projectNameForShirt": "test", "projectCode": "test", "commonFlag": "16001" }, { "projectId": "8c8c8ca95429546201542d0888bc028d", "projectName": "何处几叶萧萧雨1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "123456jpg", "projectNameForShirt": "12", "projectCode": "123", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
         if (data.code === 'SUCCESS') {
             return Persist.setFindData(colName, p, data);
-        }*/
+        }
     }
 
     /**
@@ -627,8 +649,7 @@ export default class Persist {
                 window.localStorage.setItem('db', JSON.stringify(window.db));
             }
 
-            let newArr = new Array(one);
-            data.nowItems = List(newArr);
+            data.nowItems = Map(one);
             return data;
         } else {
             console.error('已存在此数据，不能重复新建！');
@@ -696,12 +717,10 @@ export default class Persist {
         let d = data[sp];
 
         if (d && d.length > 0) {
-            let newArr = new Array(Utils.updateData(colName, d, key));
-            data.nowItems = List(newArr);
+            data.nowItems = Map(Utils.updateData(colName, d, key));
             return data;
         } else {
-            let newArr = new Array(Utils.updateData(colName, doc, key));
-            data.nowItems = List(newArr);
+            data.nowItems = Map(Utils.updateData(colName, doc, key));
             return data;
         }
     }
@@ -727,30 +746,26 @@ export default class Persist {
             if (typeof(mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
-                    let newArr = new Array(Utils.removeData(colName, param, key));
-                    data.nowItems = List(newArr);
+                    data.nowItems = Map(Utils.removeData(colName, param, key));
                 })
             } else {
                 // 返回相关操作数据
-                let newArr = new Array(Utils.removeData(colName, param, key));
-                mock.nowItems = List(newArr);
+                mock.nowItems = Map(Utils.removeData(colName, param, key));
                 return mock;
             }
         }
-        
+
         // 执行ajax请求查询某集合数据详情
         return $.delete(Persist.getUrl(colName, p, param), null, (data) => {
             if (data.code === 'SUCCESS') {
-                let newArr = new Array(Utils.removeData(colName, param, key));
-                data.nowItems = List(newArr);
+                data.nowItems = Map(Utils.removeData(colName, param, key));
             }
         });
 
         // 模拟数据
         /*let data = { "millis": 770, "code": "SUCCESS", "message": "操作成功", "entity": null };
         if (data.code === 'SUCCESS') {
-            let newArr = new Array(Utils.removeData(colName, param, key));
-            data.nowItems = List(newArr);
+            data.nowItems = Map(Utils.removeData(colName, param, key));
             return data;
         }*/
     }

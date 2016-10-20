@@ -1,0 +1,19 @@
+.blue_button {
+    background: #2db7f5;
+    border: 0px;
+    padding: 3px 15px;
+    border-radius: 3px;
+    color: #fff;
+    margin-right: 10px;
+}
+
+table th {
+    background: #f7f7f7;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+table td {
+    padding: 5px 10px;
+    font-size: 12px;
+}

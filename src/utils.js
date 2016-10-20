@@ -20,14 +20,14 @@ export default class Utils {
                 if (typeof obj === 'function') {
                     // 直接轮巡函数
                     obj();
-                // 如果为对象类型
+                    // 如果为对象类型
                 } else {
                     // 获得当前延迟秒数
                     obj.cur = (obj.cur || obj.delay) - 1;
                     // 如果不需要延迟
-                    if(obj.cur < 1) {
+                    if (obj.cur < 1) {
                         // 如果对象 func 为函数类型
-                        if(typeof obj.func === 'function') {
+                        if (typeof obj.func === 'function') {
                             // 执行轮巡函数
                             obj.func();
                         }
@@ -96,14 +96,24 @@ export default class Utils {
      */
     static isEmpty(obj) {
         if (!obj) return true;
-        if (this.isArray(obj)) {
-            return obj.length == 0;
-        } else if (this.isObject(obj)) {
-            for (var name in obj) {
+
+        if (List.isList(obj) || Map.isMap(obj)) {
+            if (obj.size > 1) {
                 return false;
+            } else {
+                return true;
             }
-            return true;
+        } else {
+            if (this.isArray(obj)) {
+                return obj.length == 0;
+            } else if (this.isObject(obj)) {
+                for (var name in obj) {
+                    return false;
+                }
+                return true;
+            }
         }
+
         return false;
     };
 

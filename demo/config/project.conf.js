@@ -40,7 +40,7 @@ export default {
             "time": 64,
             "code": "SUCCESS",
             "message": "操作成功",
-            "entity": ''
+            "entity": ""
         },
         // 数据存放字段
         "storeParam": "entity"
@@ -101,7 +101,7 @@ export default {
             "time": 64,
             "code": "SUCCESS",
             "message": "操作成功",
-            "entity": ''
+            "entity": ""
         },
         // 生成的mock数据存放字段
         "storeParam": "entity"
@@ -109,7 +109,7 @@ export default {
     //新增
     "insert": {
         //包含的参数，只要有include，持续层就会调用
-        "include": ["projectName", "projectNameShort", "projectCode", "projectNameSpace", "fileListStr", "importanceLevel"],
+        "include": ["projectName", "projectManager", "projectIcon", "projectNameShort", "projectCode", "projectNameSpace", "fileListStr", "importanceLevel"],
         //不包含的参数，可有可无，只有在include不存在时才会执行
         "exclusive": ["projectId", "projectName"],
         getUrl: (param) => {
@@ -149,6 +149,8 @@ export default {
         "primaryKey": "projectId",
         // 过期
         "cacheTimeOut": 5184000,
+        // 请求次数
+        "requestNum": 5,
         // 实体字段配置，根据mock级别 + 数据类型 = mock属性长度
         "fields": {
             "projectId": "string",
