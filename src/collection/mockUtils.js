@@ -76,7 +76,7 @@ export default class MockUtils {
      * @param  {[type]} ret [操作返回对象]
      * @return {[type]}   [description]
      */
-    static createMockContent(ret, fields) {
+    static createMockContent(ret, fields, imgs) {
         // 赋值操作返回对象
         let obj = JSON.parse(JSON.stringify(ret));
         // 如果返回配置是对象
@@ -123,7 +123,7 @@ export default class MockUtils {
                     obj[key] = valArr;
                 } else {
                     // 其他情况字段赋值
-                    obj[key] = MockUtils.getItemValue(fields[key], levelArr);
+                    obj[key] = MockUtils.getItemValue(fields[key], levelArr, imgs);
                 }
             });
 
@@ -135,8 +135,9 @@ export default class MockUtils {
      * [getItemValue 根据类型返回相应值]
      * @param {[type]} type [类型]
      * @param {[type]} levelArr [长度级别数组]
+     * @param {[type]} imgs [图片]
      */
-    static getItemValue(type, levelArr) {
+    static getItemValue(type, levelArr, imgs) {
         // 返回变量
         let value = '';
 
@@ -156,7 +157,11 @@ export default class MockUtils {
         } else if (type === 'time') {
             // 时间戳
             value = new Date().getTime();
-        }
+        }/* else if (type === 'img') {
+            // 图片
+            let k = Math.floor(Math.random() * Object.getOwnPropertyNames(imgs).length) + 1;
+            value = imgs[`img${k}`];
+        }*/
 
         return value;
     }

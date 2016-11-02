@@ -99,85 +99,85 @@ var Collection = function () {
         /**
          * [findOne 查询数据详情]
          * @param  {[type]} doc [查询对象 或 数据编号]
+         * @param  {[type]} type [url类型]
          * @return {[type]}     [description]
          */
-        value: function findOne(doc) {
+        value: function findOne(doc, type) {
+            var _this = this;
+
             // 清缓存
             Collection.clearCacheData(this.colName, 'findOne');
 
             // 调用持久化对象 查询 数据详情
-            /*if (Persist.isMock) {
+            if (_persist2.default.isMock) {
                 // mock数据
-                let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
+                var mock = _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'), type);
                 if (mock) {
-                    if (typeof(mock.then) === 'function') {
-                        return mock.then(((data) => {
+                    if (typeof mock.then === 'function') {
+                        return mock.then(function (data) {
                             // 集合变更，发布事件
-                            PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
-                        }).bind(this));
+                            _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
+                        }.bind(this));
                     } else {
                         // 集合变更发布事件
-                        PubSub.publish(this.pubsubKey('findOne'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey('findOne'), mock.nowItems);
                     }
                 }
             } else {
-                return Persist.findOne(this.colName, doc, this.pubsubKey('findOne')).then(((data) => {
+                return _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'), type).then(function (data) {
                     // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
-                }).bind(this));
-            }*/
-
-            // 模仿数据
-            var data = _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'));
-            _pubsubJs2.default.publish(this.pubsubKey('findOne'), data.nowItems);
+                    _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
+                }.bind(this));
+            }
         }
 
         /**
          * [find 根据查询器，查询集合]
          * @param  {[type]} doc   [查询器]
-         * @param  {[type]} rtSet [返回指定键]
+         * @param  {[type]} type [url类型]
          * @return {[type]}       [description]
          */
 
     }, {
         key: 'find',
-        value: function find(doc, rtSet) {
-            // 不符合查询规则
-            if (!doc || !(typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) == "object") return false;
+        value: function find(doc, val, type) {
+            var _this2 = this;
 
             // 初始化请求数据
             var query = {};
+            // 不符合查询规则
+            if (doc && (typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) == "object") {
+                // 如果传入数据为 object 类型
+                for (var key in doc) {
+                    var value = doc[key];
+                    if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) != "object") {
+                        // 等值搜索
+                        query[key] = value;
+                    } else {
+                        // 条件搜索
+                        for (var inKey in value) {
+                            // 查询器的值
+                            var inValue = value[inKey];
+                            if (inKey.indexOf("$") == 0) {
+                                // 搜索查询器
+                                var tag = inKey;
 
-            // 如果传入数据为 object 类型
-            for (var key in doc) {
-                var value = doc[key];
-                if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) != "object") {
-                    // 等值搜索
-                    query[key] = value;
-                } else {
-                    // 条件搜索
-                    for (var inKey in value) {
-                        // 查询器的值
-                        var inValue = value[inKey];
-                        if (inKey.indexOf("$") == 0) {
-                            // 搜索查询器
-                            var tag = inKey;
-
-                            // 按照 查询器 解析 查询条件
-                            try {
-                                var v = _query2.default[tag](inValue);
-                                if (v) {
-                                    query[key] = v;
-                                } else {
+                                // 按照 查询器 解析 查询条件
+                                try {
+                                    var v = _query2.default[tag](inValue);
+                                    if (v) {
+                                        query[key] = v;
+                                    } else {
+                                        return false;
+                                    }
+                                } catch (e) {
+                                    // 查询器暂不支持;
                                     return false;
                                 }
-                            } catch (e) {
-                                // 查询器暂不支持;
+                            } else {
+                                // 条件搜搜的查询器不是以 $ 开头
                                 return false;
                             }
-                        } else {
-                            // 条件搜搜的查询器不是以 $ 开头
-                            return false;
                         }
                     }
                 }
@@ -187,99 +187,105 @@ var Collection = function () {
             Collection.clearCacheData(this.colName, 'find');
 
             // 调用持久化对象 查询 数据详情
-            /*if (Persist.isMock) {
+            if (_persist2.default.isMock) {
                 // mock数据
-                let mock = Persist.find(this.colName, doc, this.pubsubKey('find'));
+                var mock = _persist2.default.find(this.colName, doc, val, this.pubsubKey('find'), type);
                 if (mock) {
-                    if (typeof(mock.then) === 'function') {
-                        return mock.then(((data) => {
+                    if (typeof mock.then === 'function') {
+                        return mock.then(function (data) {
                             // 集合变更，发布事件
-                            PubSub.publish(this.pubsubKey('find'), data.nowItems);
-                        }).bind(this));
+                            _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
+                        }.bind(this));
                     } else {
+                        var deferred = $.Deferred();
                         // 集合变更发布事件
-                        PubSub.publish(this.pubsubKey('find'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey('find'), mock.nowItems);
+                        deferred.resolve();
+
+                        return deferred.promise();
                     }
                 }
-              } else {
+            } else {
                 // 调用持久化对象 查询 数据详情
-                return Persist.find(this.colName, query, this.pubsubKey('find')).then(((data) => {
+                return _persist2.default.find(this.colName, query, val, this.pubsubKey('find'), type).then(function (data) {
                     // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('find'), data.nowItems);
-                }).bind(this));
-            }*/
-
-            // 模仿数据
-            var data = _persist2.default.find(this.colName, doc, this.pubsubKey('find'));
-            _pubsubJs2.default.publish(this.pubsubKey('find'), data.nowItems);
+                    _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
+                }.bind(this));
+            }
         }
 
         /**
          * [insert 向集合插入单条数据]
          * @param  {[type]} doc [单条数据]
+         * @param  {[type]} type [url类型]
          * @return {[type]}      [description]
          */
 
     }, {
         key: 'insert',
-        value: function insert(doc) {
+        value: function insert(doc, type) {
+            var _this3 = this;
+
             // 清缓存
             Collection.clearCacheData(this.colName, 'insert');
             // 调用持久化对象 查询 数据详情
-            /*if (Persist.isMock) {
+            if (_persist2.default.isMock) {
                 // mock
-                let mock = Persist.insert(this.colName, doc);
+                var mock = _persist2.default.insert(this.colName, doc, type);
                 if (mock) {
-                    if (typeof(mock.then) === 'function') {
-                        return mock.then(((data) => {
+                    if (typeof mock.then === 'function') {
+                        return mock.then(function (data) {
                             // 集合变更，发布事件
-                            PubSub.publish(this.pubsubKey('insert'), data.nowItems);
-                        }).bind(this));
+                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+                        }.bind(this));
                     } else {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('insert'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey('insert'), mock.nowItems);
                     }
                 }
             } else {
                 // 请求次数
-                let num = Persist.getRequestNum(this.colName);
-                  return Persist.insert(this.colName, doc).then(((data) => {
-                    // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('insert'), data.nowItems);
-                }).bind(this));
-            }*/
+                var num = _persist2.default.getRequestNum(this.colName);
 
-            /*== 模仿数据 ==*/
-            // 请求次数
-            var num = _persist2.default.getRequestNum(this.colName);
-            for (var i = 0; i < num; i++) {
-                var data = _persist2.default.insert(this.colName, doc);
-                _pubsubJs2.default.publish(this.pubsubKey('insert'), data.nowItems);
+                for (var i = 0; i < num; i++) {
+                    if (i == num - 1) {
+                        return _persist2.default.insert(this.colName, doc, type).then(function (data) {
+                            // 集合变更发布事件
+                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+                        }.bind(this));
+                    }
+
+                    _persist2.default.insert(this.colName, doc, type).then(function (data) {
+                        // 集合变更发布事件
+                        _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+                    }.bind(this));
+                }
             }
         }
 
         /**
          * [update 更新集合中单条数据]
          * @param  {[type]} doc [单条数据]
+         * @param  {[type]} type [url类型]
          * @return {[type]}     [description]
          */
 
     }, {
         key: 'update',
-        value: function update(doc) {
-            var _this = this;
+        value: function update(doc, type) {
+            var _this4 = this;
 
             // 清缓存
             Collection.clearCacheData(this.colName, 'update');
             // 调用持久对象，更新单条数据
             if (_persist2.default.isMock) {
                 // mock
-                var mock = _persist2.default.update(this.colName, doc);
+                var mock = _persist2.default.update(this.colName, doc, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this.pubsubKey('update'), data.nowItems);
+                            _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
@@ -287,58 +293,59 @@ var Collection = function () {
                     }
                 }
             } else {
-                return _persist2.default.update(this.colName, doc).then(function (data) {
+                return _persist2.default.update(this.colName, doc, type).then(function (data) {
                     // 集合变更，发布事件
-                    _pubsubJs2.default.publish(_this.pubsubKey('update'), data.nowItems);
+                    _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
                 }.bind(this));
             }
-
-            /*// 模拟数据
-            let data = Persist.update(this.colName, doc)
-            PubSub.publish(this.pubsubKey('update'), data.nowItems);*/
         }
 
         /**
          * [remove 向集合删除单条信息]
          * @param  {[type]} doc [单条数据 或 数据编号]
+         * @param  {[type]} type [url类型]
          * @return {[type]}     [description]
          */
 
     }, {
         key: 'remove',
-        value: function remove(doc) {
+        value: function remove(doc, type) {
+            var _this5 = this;
+
             // 清缓存
             Collection.clearCacheData(this.colName, 'remove');
             // 调用持久对象，更新单条数据
-            /*if (Persist.isMock) {
+            if (_persist2.default.isMock) {
                 // mock
-                let mock = Persist.remove(this.colName, doc);
+                var mock = _persist2.default.remove(this.colName, doc, type);
                 if (mock) {
-                    if (typeof(mock.then) === 'function') {
-                        return mock.then(((data) => {
+                    if (typeof mock.then === 'function') {
+                        return mock.then(function (data) {
                             // 集合变更，发布事件
-                            PubSub.publish(this.pubsubKey('remove'), data.nowItems);
-                        }).bind(this));
+                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+                        }.bind(this));
                     } else {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('remove'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey('remove'), mock.nowItems);
                     }
                 }
             } else {
                 // 请求次数
-                let num = Persist.getRequestNum(this.colName);
-                  return Persist.remove(this.colName, doc).then(((data) => {
-                    // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey('remove'), data.nowItems);
-                }).bind(this));
-            }*/
+                var num = _persist2.default.getRequestNum(this.colName);
 
-            /*== 模仿数据 ==*/
-            // 请求次数
-            var num = _persist2.default.getRequestNum(this.colName);
-            for (var i = 0; i < num; i++) {
-                var data = _persist2.default.remove(this.colName, doc);
-                _pubsubJs2.default.publish(this.pubsubKey('remove'), data.nowItems);
+                for (var i = 0; i < num; i++) {
+                    if (i == num - 1) {
+                        return _persist2.default.remove(this.colName, doc, type).then(function (data) {
+                            // 集合变更，发布事件
+                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+                        }.bind(this));
+                    }
+
+                    _persist2.default.remove(this.colName, doc, type).then(function (data) {
+                        // 集合变更，发布事件
+                        _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+                    }.bind(this));
+                }
             }
         }
     }], [{

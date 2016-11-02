@@ -90,16 +90,17 @@ export default class Collection {
     /**
      * [findOne 查询数据详情]
      * @param  {[type]} doc [查询对象 或 数据编号]
+     * @param  {[type]} type [url类型]
      * @return {[type]}     [description]
      */
-    findOne(doc) {
+    findOne(doc, type) {
         // 清缓存
         Collection.clearCacheData(this.colName, 'findOne');
 
         // 调用持久化对象 查询 数据详情
-        /*if (Persist.isMock) {
+        if (Persist.isMock) {
             // mock数据
-            let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
+            let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'), type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -112,60 +113,55 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.findOne(this.colName, doc, this.pubsubKey('findOne')).then(((data) => {
+            return Persist.findOne(this.colName, doc, this.pubsubKey('findOne'), type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
             }).bind(this));
-        }*/
-
-        // 模仿数据
-        let data = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'));
-        PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+        }
     }
 
     /**
      * [find 根据查询器，查询集合]
      * @param  {[type]} doc   [查询器]
-     * @param  {[type]} rtSet [返回指定键]
+     * @param  {[type]} type [url类型]
      * @return {[type]}       [description]
      */
-    find(doc, rtSet) {
-        // 不符合查询规则
-        if (!doc || !typeof(doc) == "object") return false;
-
+    find(doc, val, type) {
         // 初始化请求数据
         let query = {};
+        // 不符合查询规则
+        if (doc && typeof(doc) == "object") {
+            // 如果传入数据为 object 类型
+            for (let key in doc) {
+                let value = doc[key];
+                if (typeof(value) != "object") {
+                    // 等值搜索
+                    query[key] = value;
+                } else {
+                    // 条件搜索
+                    for (let inKey in value) {
+                        // 查询器的值
+                        let inValue = value[inKey];
+                        if (inKey.indexOf("$") == 0) {
+                            // 搜索查询器
+                            let tag = inKey;
 
-        // 如果传入数据为 object 类型
-        for (let key in doc) {
-            let value = doc[key];
-            if (typeof(value) != "object") {
-                // 等值搜索
-                query[key] = value;
-            } else {
-                // 条件搜索
-                for (let inKey in value) {
-                    // 查询器的值
-                    let inValue = value[inKey];
-                    if (inKey.indexOf("$") == 0) {
-                        // 搜索查询器
-                        let tag = inKey;
-
-                        // 按照 查询器 解析 查询条件
-                        try {
-                            let v = Query[tag](inValue);
-                            if (v) {
-                                query[key] = v
-                            } else {
+                            // 按照 查询器 解析 查询条件
+                            try {
+                                let v = Query[tag](inValue);
+                                if (v) {
+                                    query[key] = v
+                                } else {
+                                    return false;
+                                }
+                            } catch (e) {
+                                // 查询器暂不支持;
                                 return false;
                             }
-                        } catch (e) {
-                            // 查询器暂不支持;
+                        } else {
+                            // 条件搜搜的查询器不是以 $ 开头
                             return false;
                         }
-                    } else {
-                        // 条件搜搜的查询器不是以 $ 开头
-                        return false;
                     }
                 }
             }
@@ -175,9 +171,9 @@ export default class Collection {
         Collection.clearCacheData(this.colName, 'find');
 
         // 调用持久化对象 查询 数据详情
-        /*if (Persist.isMock) {
+        if (Persist.isMock) {
             // mock数据
-            let mock = Persist.find(this.colName, doc, this.pubsubKey('find'));
+            let mock = Persist.find(this.colName, doc, val, this.pubsubKey('find'), type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -185,36 +181,37 @@ export default class Collection {
                         PubSub.publish(this.pubsubKey('find'), data.nowItems);
                     }).bind(this));
                 } else {
+                    let deferred = $.Deferred();
                     // 集合变更发布事件
                     PubSub.publish(this.pubsubKey('find'), mock.nowItems);
+                    deferred.resolve();
+
+                    return deferred.promise();
                 }
             }
 
         } else {
             // 调用持久化对象 查询 数据详情
-            return Persist.find(this.colName, query, this.pubsubKey('find')).then(((data) => {
+            return Persist.find(this.colName, query, val, this.pubsubKey('find'), type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey('find'), data.nowItems);
             }).bind(this));
-        }*/
-
-        // 模仿数据
-        let data = Persist.find(this.colName, doc, this.pubsubKey('find'));
-        PubSub.publish(this.pubsubKey('find'), data.nowItems);
+        }
     }
 
     /**
      * [insert 向集合插入单条数据]
      * @param  {[type]} doc [单条数据]
+     * @param  {[type]} type [url类型]
      * @return {[type]}      [description]
      */
-    insert(doc) {
+    insert(doc, type) {
         // 清缓存
         Collection.clearCacheData(this.colName, 'insert');
         // 调用持久化对象 查询 数据详情
-        /*if (Persist.isMock) {
+        if (Persist.isMock) {
             // mock
-            let mock = Persist.insert(this.colName, doc);
+            let mock = Persist.insert(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -230,33 +227,35 @@ export default class Collection {
             // 请求次数
             let num = Persist.getRequestNum(this.colName);
 
-            return Persist.insert(this.colName, doc).then(((data) => {
-                // 集合变更发布事件
-                PubSub.publish(this.pubsubKey('insert'), data.nowItems);
-            }).bind(this));
-        }*/
-
-        /*== 模仿数据 ==*/
-        // 请求次数
-        let num = Persist.getRequestNum(this.colName);
-        for (var i = 0; i < num; i++) {
-            let data = Persist.insert(this.colName, doc);
-            PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+            for (var i = 0; i < num; i++) {
+                if (i == num - 1) {
+                    return Persist.insert(this.colName, doc, type).then(((data) => {
+                        // 集合变更发布事件
+                        PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+                    }).bind(this));
+                }
+                
+                Persist.insert(this.colName, doc, type).then(((data) => {
+                    // 集合变更发布事件
+                    PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+                }).bind(this));
+            }
         }
     }
 
     /**
      * [update 更新集合中单条数据]
      * @param  {[type]} doc [单条数据]
+     * @param  {[type]} type [url类型]
      * @return {[type]}     [description]
      */
-    update(doc) {
+    update(doc, type) {
         // 清缓存
         Collection.clearCacheData(this.colName, 'update');
         // 调用持久对象，更新单条数据
         if (Persist.isMock) {
             // mock
-            let mock = Persist.update(this.colName, doc);
+            let mock = Persist.update(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -269,29 +268,26 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.update(this.colName, doc).then(((data) => {
+            return Persist.update(this.colName, doc, type).then(((data) => {
                 // 集合变更，发布事件
                 PubSub.publish(this.pubsubKey('update'), data.nowItems);
             }).bind(this));
         }
-
-        /*// 模拟数据
-        let data = Persist.update(this.colName, doc)
-        PubSub.publish(this.pubsubKey('update'), data.nowItems);*/
     }
 
     /**
      * [remove 向集合删除单条信息]
      * @param  {[type]} doc [单条数据 或 数据编号]
+     * @param  {[type]} type [url类型]
      * @return {[type]}     [description]
      */
-    remove(doc) {
+    remove(doc, type) {
         // 清缓存
         Collection.clearCacheData(this.colName, 'remove');
         // 调用持久对象，更新单条数据
-        /*if (Persist.isMock) {
+        if (Persist.isMock) {
             // mock
-            let mock = Persist.remove(this.colName, doc);
+            let mock = Persist.remove(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -307,18 +303,19 @@ export default class Collection {
             // 请求次数
             let num = Persist.getRequestNum(this.colName);
 
-            return Persist.remove(this.colName, doc).then(((data) => {
-                // 集合变更，发布事件
-                PubSub.publish(this.pubsubKey('remove'), data.nowItems);
-            }).bind(this));
-        }*/
+            for (var i = 0; i < num; i++) {
+                if (i == num - 1) {
+                    return Persist.remove(this.colName, doc, type).then(((data) => {
+                        // 集合变更，发布事件
+                        PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                    }).bind(this));
+                }
 
-        /*== 模仿数据 ==*/
-        // 请求次数
-        let num = Persist.getRequestNum(this.colName);
-        for (var i = 0; i < num; i++) {
-            let data = Persist.remove(this.colName, doc);
-            PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                Persist.remove(this.colName, doc, type).then(((data) => {
+                    // 集合变更，发布事件
+                    PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                }).bind(this));
+            }
         }
     }
 }

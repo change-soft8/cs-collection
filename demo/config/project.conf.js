@@ -53,10 +53,6 @@ export default {
         },
         //返回链
         "returnChain": "entity.projectInfoList",
-        // 缓存有效期 1分钟
-        "validate": 60 * 1000,
-        // 数据完整性
-        "fulldata": true,
         // 查询集合，mock数据结构
         "return": {
             "joinNum": "",

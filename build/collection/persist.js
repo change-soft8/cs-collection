@@ -106,6 +106,8 @@ var Persist = function () {
             var sp = Persist.getStoreParam(colName, oper);
             // 获取集合主键
             var key = Persist.getPrimaryKey(colName);
+            // 获取图片
+            var imgs = Persist.getImgList(colName);
 
             // 如果没有return参数、return为null或者return为空对象
             if (!ret || $.isEmptyObject(ret)) {
@@ -121,7 +123,7 @@ var Persist = function () {
                 // 根据return返回数据（有return和fileds一般为查询接口）
             } else if (ret && mockFields) {
                 // 生成的对象
-                var obj = _mockUtils2.default.createMockContent(ret, mockFields);
+                var obj = _mockUtils2.default.createMockContent(ret, mockFields, imgs);
                 // 赋值
                 mockStr[sp] = obj;
 
@@ -155,18 +157,19 @@ var Persist = function () {
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} oper    [操作名称]
          * @param  {[type]} param   [操作参数]
+         * @param  {[type]} type    [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'getUrl',
-        value: function getUrl(colName, oper, param) {
+        value: function getUrl(colName, oper, param, type) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
             // 获得集合--操作相关配置
             var op = col && col[oper];
             // 获得结合--操作--url
-            return op && op.getUrl(param);
+            return op && op.getUrl(param, type);
         }
 
         /**
@@ -222,13 +225,28 @@ var Persist = function () {
         }
 
         /**
-         * [getPrimaryKey 获得集合主键]
+         * [getImgList 获取图片]
          * @param  {[type]} colName [集合名称]
          * @return {[type]}         [description]
          */
 
     }, {
+        key: 'getImgList',
+        value: function getImgList(colName) {
+            // 获得集合相关配置
+            var col = window.collectionConfig[colName];
+            // 获得集合图片
+            return col && col.entity && col.entity.imgList;
+        }
+    }, {
         key: 'getPrimaryKey',
+
+
+        /**
+         * [getPrimaryKey 获得集合主键]
+         * @param  {[type]} colName [集合名称]
+         * @return {[type]}         [description]
+         */
         value: function getPrimaryKey(colName) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
@@ -337,6 +355,36 @@ var Persist = function () {
         }
 
         /**
+         * [getOtherData 获取其他数据]
+         * @param  {[type]} chain [返回链]
+         * @param  {[type]} data [插入数据]
+         * @return {[type]}         [description]
+         */
+
+    }, {
+        key: 'getOtherData',
+        value: function getOtherData(chain, data) {
+            var other = [];
+
+            if (chain) {
+                var cArr = chain.split('.');
+                var last = cArr[cArr.length - 1];
+
+                for (var i = 0; i < cArr.length - 1; i++) {
+                    data = data[cArr[i]];
+                }
+
+                for (var i in data) {
+                    if (i != last) {
+                        other[i] = data[i];
+                    }
+                }
+            }
+
+            return other;
+        }
+
+        /**
          * [isInsert 判断是否可插入]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} p [操作名称]
@@ -399,30 +447,32 @@ var Persist = function () {
          * [findOne 查询集合某数据详情]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc     [单条数据]
-         * @param  {[type]} pubkey     [发布key]
+         * @param  {[type]} pubkey  [发布key]
+         * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'findOne',
-        value: function findOne(colName, doc, pubkey) {
+        value: function findOne(colName, doc, pubkey, type) {
             // 操作名称
             var p = 'findOne';
 
             // 如果需要返回mock数据
-            /*if (Persist.isMock) {
+            if (Persist.isMock) {
                 // 生成相关mock数据
-                let mock = Persist.mock(colName, p, doc);
-                  if (typeof(mock) === 'string') {
-                    return $.getJSON(mock, null, (data) => {
+                var mock = Persist.mock(colName, p, doc);
+
+                if (typeof mock === 'string') {
+                    return $.getJSON(mock, null, function (data) {
                         // 返回相关操作数据
                         Persist.setFindOneData(colName, p, data);
-                    })
+                    });
                 } else {
                     // 返回相关操作数据
                     return Persist.setFindOneData(colName, p, mock);
                 }
-            }*/
+            }
 
             // 获取主键
             var key = Persist.getPrimaryKey(colName);
@@ -430,10 +480,10 @@ var Persist = function () {
             var param = Persist.getPrimaryKeyValue(colName, doc);
 
             var db = window.db && window.db[colName] && window.db[colName].items;
-            var parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
+            // let parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
             if (db && db.size > 0) {
                 db.forEach(function (val, i) {
-                    if (val[key] == parammock) {
+                    if (val[key] == param) {
                         //目前模仿第一条数据，到时候parammock改为param
                         _pubsubJs2.default.publish(pubkey, (0, _immutable.Map)(val));
                     }
@@ -441,17 +491,11 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情    
-            /*return $.get(Persist.getUrl(colName, 'findOne', param), null, (data) => {
+            return $.get(Persist.getUrl(colName, 'findOne', param, type), null, function (data) {
                 if (data.code === 'SUCCESS') {
                     Persist.setFindOneData(colName, p, data);
                 }
-            });*/
-
-            // 模拟数据
-            var data = { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 1, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca956e00caa0156e8be040400dd", "projectName": "来，跟我一起说：耶~", "projectManager": "沈佳芳2233", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "sjzmdqkk", "projectNameForShirt": "sjzmd", "projectCode": "wyqkk", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
-            if (data.code === 'SUCCESS') {
-                return Persist.setFindOneData(colName, p, data);
-            }
+            });
         }
 
         /**
@@ -498,30 +542,32 @@ var Persist = function () {
          * [find 查询数据集合]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc     [数据参数]
-         * @param  {[type]} pubkey     [发布key]
+         * @param  {[type]} pubkey  [发布key]
+         * @param  {[type]} type    [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'find',
-        value: function find(colName, doc, pubkey) {
+        value: function find(colName, doc, val, pubkey, type) {
             // 操作名称
             var p = 'find';
 
             // 如果需要返回mock数据
-            /*if (Persist.isMock) {
+            if (Persist.isMock) {
                 // 生成相关mock数据
-                let mock = Persist.mock(colName, p, doc);
-                  if (typeof(mock) === 'string') {
-                    return $.getJSON(mock, null, (data) => {
+                var mock = Persist.mock(colName, p, doc);
+
+                if (typeof mock === 'string') {
+                    return $.getJSON(mock, null, function (data) {
                         // 返回相关操作数据
                         Persist.setFindData(colName, p, data);
-                    })
+                    });
                 } else {
                     // 返回相关操作数据
                     return Persist.setFindData(colName, p, mock);
                 }
-            }*/
+            }
 
             var db = window.db && window.db[colName] && window.db[colName].items;
             var match = _collectionUtils2.default.filterListKey(db, doc);
@@ -531,17 +577,11 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情
-            /*return $.get(Persist.getUrl(colName, p, doc), doc, (data) => {
+            return $.get(Persist.getUrl(colName, p, val, type), doc, function (data) {
                 if (data.code === 'SUCCESS') {
                     Persist.setFindData(colName, p, data);
                 }
-            });*/
-
-            // 模拟数据
-            var data = { "millis": 40, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "allProjectNum": null, "joinNum": 3, "closeNum": 0, "projectInfoList": [{ "projectId": "8c8c8ca9543dbb2901544b98df3d0963", "projectName": "莫道芳时易度，朝暮1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "test0425G30", "projectNameForShirt": "test", "projectCode": "test", "commonFlag": "16001" }, { "projectId": "8c8c8ca95429546201542d0888bc028d", "projectName": "何处几叶萧萧雨1", "projectManager": "沈佳芳", "projectManagerIcon": "https://file.newtouch.com/yangyang/131d4e16-6509-47d0-a46b-21c39480b89d.png", "projectStatus": "14001", "projectImportanceLevel": "41001", "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png", "projectTagList": [], "members": 1, "projectManagerLoginName": "shenjiafang", "projectNameSpace": "123456jpg", "projectNameForShirt": "12", "projectCode": "123", "commonFlag": "16001" }], "closeProjectInfoList": [], "commonProjectInfoList": null, "regularProjectInfoList": null } };
-            if (data.code === 'SUCCESS') {
-                return Persist.setFindData(colName, p, data);
-            }
+            });
         }
 
         /**
@@ -561,6 +601,12 @@ var Persist = function () {
             var key = Persist.getPrimaryKey(colName);
 
             var newdb = Persist.getNowdbData(colName, chain, p, data, key);
+
+            var other = Persist.getOtherData(chain, data);
+
+            if (other) {
+                window.db[colName].other = other;
+            }
 
             if (!newdb) {
                 console.error(colName + '\u8FD4\u56DE\u94FE' + chain + '\uFF0C\u914D\u7F6E\u6709\u8BEF\uFF01');
@@ -608,12 +654,13 @@ var Persist = function () {
          * [insert 向集合插入单条数据]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc [单条数据]
+         * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'insert',
-        value: function insert(colName, doc) {
+        value: function insert(colName, doc, type) {
             // 操作名称
             var p = "insert";
             // 获取实际所需参数key值
@@ -638,17 +685,11 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情
-            return $.post(Persist.getUrl(colName, p, doc), paramObj, function (data) {
+            return $.post(Persist.getUrl(colName, p, doc, type), paramObj, function (data) {
                 if (data.code === 'SUCCESS') {
                     Persist.setInsertData(colName, p, data, paramObj);
                 }
             });
-
-            // 模拟数据
-            /*let data = { "millis": 154, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "projectId": "8c8c8ca956e00caa0156e8be040400dc" } };
-            if (data.code === 'SUCCESS') {
-                return Persist.setInsertData(colName, p, data, paramObj);
-            }*/
         }
 
         /**
@@ -690,12 +731,13 @@ var Persist = function () {
          * [update 更新集合中单条数据]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc [单条数据]
+         * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'update',
-        value: function update(colName, doc) {
+        value: function update(colName, doc, type) {
             var p = 'update';
 
             // 如果需要返回mock数据
@@ -721,17 +763,11 @@ var Persist = function () {
             // 获取主键值
             var param = Persist.getPrimaryKeyValue(colName, doc);
             // 执行ajax请求查询某集合数据详情
-            return $.put(Persist.getUrl(colName, p, param), paramObj, function (data) {
+            return $.put(Persist.getUrl(colName, p, param, type), paramObj, function (data) {
                 if (data.code === 'SUCCESS') {
                     Persist.setUpdateData(colName, p, data, doc);
                 }
             });
-
-            // 模拟数据
-            /*let data = { "millis": 112, "code": "SUCCESS", "message": "操作成功", "entity": { "serviceResultCode": null, "accessToken": null, "projectTagInfoList": null, "tagList": [] } };
-            if (data.code === 'SUCCESS') {
-                return Persist.setUpdateData(colName, p, data, doc);
-            }*/
         }
 
         /**
@@ -765,12 +801,13 @@ var Persist = function () {
          * [remove 向集合删除单条信息]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc [单条数据 或 数据编号]
+         * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'remove',
-        value: function remove(colName, doc) {
+        value: function remove(colName, doc, type) {
             var p = 'remove';
             // 获取主键
             var key = Persist.getPrimaryKey(colName);
@@ -795,18 +832,11 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情
-            return $.delete(Persist.getUrl(colName, p, param), null, function (data) {
+            return $.delete(Persist.getUrl(colName, p, param, type), null, function (data) {
                 if (data.code === 'SUCCESS') {
                     data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
                 }
             });
-
-            // 模拟数据
-            /*let data = { "millis": 770, "code": "SUCCESS", "message": "操作成功", "entity": null };
-            if (data.code === 'SUCCESS') {
-                data.nowItems = Map(Utils.removeData(colName, param, key));
-                return data;
-            }*/
         }
     }]);
 
