@@ -106,8 +106,6 @@ var Persist = function () {
             var sp = Persist.getStoreParam(colName, oper);
             // 获取集合主键
             var key = Persist.getPrimaryKey(colName);
-            // 获取图片
-            var imgs = Persist.getImgList(colName);
 
             // 如果没有return参数、return为null或者return为空对象
             if (!ret || $.isEmptyObject(ret)) {
@@ -123,7 +121,7 @@ var Persist = function () {
                 // 根据return返回数据（有return和fileds一般为查询接口）
             } else if (ret && mockFields) {
                 // 生成的对象
-                var obj = _mockUtils2.default.createMockContent(ret, mockFields, imgs);
+                var obj = _mockUtils2.default.createMockContent(ret, mockFields);
                 // 赋值
                 mockStr[sp] = obj;
 
@@ -225,28 +223,13 @@ var Persist = function () {
         }
 
         /**
-         * [getImgList 获取图片]
-         * @param  {[type]} colName [集合名称]
-         * @return {[type]}         [description]
-         */
-
-    }, {
-        key: 'getImgList',
-        value: function getImgList(colName) {
-            // 获得集合相关配置
-            var col = window.collectionConfig[colName];
-            // 获得集合图片
-            return col && col.entity && col.entity.imgList;
-        }
-    }, {
-        key: 'getPrimaryKey',
-
-
-        /**
          * [getPrimaryKey 获得集合主键]
          * @param  {[type]} colName [集合名称]
          * @return {[type]}         [description]
          */
+
+    }, {
+        key: 'getPrimaryKey',
         value: function getPrimaryKey(colName) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
@@ -352,36 +335,6 @@ var Persist = function () {
             }
 
             return newdb;
-        }
-
-        /**
-         * [getOtherData 获取其他数据]
-         * @param  {[type]} chain [返回链]
-         * @param  {[type]} data [插入数据]
-         * @return {[type]}         [description]
-         */
-
-    }, {
-        key: 'getOtherData',
-        value: function getOtherData(chain, data) {
-            var other = [];
-
-            if (chain) {
-                var cArr = chain.split('.');
-                var last = cArr[cArr.length - 1];
-
-                for (var i = 0; i < cArr.length - 1; i++) {
-                    data = data[cArr[i]];
-                }
-
-                for (var i in data) {
-                    if (i != last) {
-                        other[i] = data[i];
-                    }
-                }
-            }
-
-            return other;
         }
 
         /**
@@ -602,11 +555,7 @@ var Persist = function () {
 
             var newdb = Persist.getNowdbData(colName, chain, p, data, key);
 
-            var other = Persist.getOtherData(chain, data);
-
-            if (other) {
-                window.db[colName].other = other;
-            }
+            window.db[colName].result = data;
 
             if (!newdb) {
                 console.error(colName + '\u8FD4\u56DE\u94FE' + chain + '\uFF0C\u914D\u7F6E\u6709\u8BEF\uFF01');

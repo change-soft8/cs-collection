@@ -58,7 +58,9 @@ var Collection = function () {
         key: 'pubsub',
         value: function pubsub(p, callback) {
             // 订阅指定集合的事件
-            _pubsubJs2.default.subscribe(this.pubsubKey(p), callback);
+            var pub = _pubsubJs2.default.subscribe(this.pubsubKey(p), callback);
+
+            return pub;
         }
 
         /**
@@ -69,9 +71,9 @@ var Collection = function () {
 
     }, {
         key: 'unsubscribe',
-        value: function unsubscribe(p) {
+        value: function unsubscribe(pub) {
             // 取消订阅指定集合的事件
-            _pubsubJs2.default.unsubscribe(this.pubsubKey(p));
+            _pubsubJs2.default.unsubscribe(pub);
         }
 
         /**
@@ -83,6 +85,7 @@ var Collection = function () {
         key: 'pubsubKey',
         value: function pubsubKey(p) {
             return 'collection.' + this.colName + '.' + p + '.' + this.id;
+            // return `collection.${this.colName}.${id}.${p}}`;
         }
 
         /**
@@ -244,22 +247,33 @@ var Collection = function () {
                     }
                 }
             } else {
-                // 请求次数
-                var num = _persist2.default.getRequestNum(this.colName);
+                var inter;
 
-                for (var i = 0; i < num; i++) {
-                    if (i == num - 1) {
-                        return _persist2.default.insert(this.colName, doc, type).then(function (data) {
+                (function () {
+                    // 请求次数
+                    var num = _persist2.default.getRequestNum(_this3.colName);
+                    var i = 1;
+
+                    inter = setInterval(function () {
+                        var _this4 = this;
+
+                        if (i == num) {
+                            clearInterval(inter);
+
+                            return _persist2.default.insert(this.colName, doc, type).then(function (data) {
+                                // 集合变更发布事件
+                                _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
+                            }.bind(this));
+                        }
+
+                        _persist2.default.insert(this.colName, doc, type).then(function (data) {
                             // 集合变更发布事件
-                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+                            _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
                         }.bind(this));
-                    }
 
-                    _persist2.default.insert(this.colName, doc, type).then(function (data) {
-                        // 集合变更发布事件
-                        _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
-                    }.bind(this));
-                }
+                        i++;
+                    }.bind(_this3), 50);
+                })();
             }
         }
 
@@ -273,7 +287,7 @@ var Collection = function () {
     }, {
         key: 'update',
         value: function update(doc, type) {
-            var _this4 = this;
+            var _this5 = this;
 
             // 清缓存
             Collection.clearCacheData(this.colName, 'update');
@@ -285,7 +299,7 @@ var Collection = function () {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+                            _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
@@ -295,7 +309,9 @@ var Collection = function () {
             } else {
                 return _persist2.default.update(this.colName, doc, type).then(function (data) {
                     // 集合变更，发布事件
-                    _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+                    _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
+                    // PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+                    // PubSub.publish(this.pubsubKey('find'), data.nowItems);
                 }.bind(this));
             }
         }
@@ -310,7 +326,7 @@ var Collection = function () {
     }, {
         key: 'remove',
         value: function remove(doc, type) {
-            var _this5 = this;
+            var _this6 = this;
 
             // 清缓存
             Collection.clearCacheData(this.colName, 'remove');
@@ -322,7 +338,7 @@ var Collection = function () {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+                            _pubsubJs2.default.publish(_this6.pubsubKey('remove'), data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
@@ -330,22 +346,33 @@ var Collection = function () {
                     }
                 }
             } else {
-                // 请求次数
-                var num = _persist2.default.getRequestNum(this.colName);
+                var inter;
 
-                for (var i = 0; i < num; i++) {
-                    if (i == num - 1) {
-                        return _persist2.default.remove(this.colName, doc, type).then(function (data) {
+                (function () {
+                    // 请求次数
+                    var num = _persist2.default.getRequestNum(_this6.colName);
+                    var i = 1;
+
+                    inter = setInterval(function () {
+                        var _this7 = this;
+
+                        if (i == num) {
+                            clearInterval(inter);
+
+                            return _persist2.default.remove(this.colName, doc, type).then(function (data) {
+                                // 集合变更，发布事件
+                                _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
+                            }.bind(this));
+                        }
+
+                        _persist2.default.remove(this.colName, doc, type).then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+                            _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
                         }.bind(this));
-                    }
 
-                    _persist2.default.remove(this.colName, doc, type).then(function (data) {
-                        // 集合变更，发布事件
-                        _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
-                    }.bind(this));
-                }
+                        i++;
+                    }.bind(_this6), 50);
+                })();
             }
         }
     }], [{

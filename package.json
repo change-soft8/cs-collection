@@ -1,13 +1,14 @@
 {
   "name": "cs-collection",
-  "version": "1.0.1",
+  "version": "1.0.3",
   "description": "集合组件",
   "main": "build/localstorage.js",
   "scripts": {
-    "build": "npm run build:umd && npm run build:umd:min",
-    "build:umd": "webpack src/localstorage.js dist/cs-collection.js",
-    "build:umd:min": "webpack src/localstorage.js dist/cs-collection.min.js -p",
-    "publish": "npm run build && npm run adduser",
+    "babel": "babel src -d build",
+    "dist": "npm run dist:umd && npm run dist:umd:min",
+    "dist:umd": "webpack src/localstorage.js dist/cs-collection.js",
+    "dist:umd:min": "webpack src/localstorage.js dist/cs-collection.min.js -p",
+    "publish": "npm run dist && npm run adduser",
     "adduser": "npm owner add shenjiafang"
   },
   "author": "cs_team",

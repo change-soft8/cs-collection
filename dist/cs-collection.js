@@ -216,7 +216,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        key: 'pubsub',
 	        value: function pubsub(p, callback) {
 	            // 订阅指定集合的事件
-	            _pubsubJs2.default.subscribe(this.pubsubKey(p), callback);
+	            var pub = _pubsubJs2.default.subscribe(this.pubsubKey(p), callback);
+
+	            return pub;
 	        }
 
 	        /**
@@ -227,9 +229,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    }, {
 	        key: 'unsubscribe',
-	        value: function unsubscribe(p) {
+	        value: function unsubscribe(pub) {
 	            // 取消订阅指定集合的事件
-	            _pubsubJs2.default.unsubscribe(this.pubsubKey(p));
+	            _pubsubJs2.default.unsubscribe(pub);
 	        }
 
 	        /**
@@ -241,6 +243,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        key: 'pubsubKey',
 	        value: function pubsubKey(p) {
 	            return 'collection.' + this.colName + '.' + p + '.' + this.id;
+	            // return `collection.${this.colName}.${id}.${p}}`;
 	        }
 
 	        /**
@@ -402,22 +405,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            } else {
-	                // 请求次数
-	                var num = _persist2.default.getRequestNum(this.colName);
+	                var inter;
 
-	                for (var i = 0; i < num; i++) {
-	                    if (i == num - 1) {
-	                        return _persist2.default.insert(this.colName, doc, type).then(function (data) {
+	                (function () {
+	                    // 请求次数
+	                    var num = _persist2.default.getRequestNum(_this3.colName);
+	                    var i = 1;
+
+	                    inter = setInterval(function () {
+	                        var _this4 = this;
+
+	                        if (i == num) {
+	                            clearInterval(inter);
+
+	                            return _persist2.default.insert(this.colName, doc, type).then(function (data) {
+	                                // 集合变更发布事件
+	                                _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
+	                            }.bind(this));
+	                        }
+
+	                        _persist2.default.insert(this.colName, doc, type).then(function (data) {
 	                            // 集合变更发布事件
-	                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+	                            _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
 	                        }.bind(this));
-	                    }
 
-	                    _persist2.default.insert(this.colName, doc, type).then(function (data) {
-	                        // 集合变更发布事件
-	                        _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
-	                    }.bind(this));
-	                }
+	                        i++;
+	                    }.bind(_this3), 50);
+	                })();
 	            }
 	        }
 
@@ -431,7 +445,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'update',
 	        value: function update(doc, type) {
-	            var _this4 = this;
+	            var _this5 = this;
 
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'update');
@@ -443,7 +457,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+	                            _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
 	                        }.bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
@@ -453,7 +467,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else {
 	                return _persist2.default.update(this.colName, doc, type).then(function (data) {
 	                    // 集合变更，发布事件
-	                    _pubsubJs2.default.publish(_this4.pubsubKey('update'), data.nowItems);
+	                    _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
+	                    // PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+	                    // PubSub.publish(this.pubsubKey('find'), data.nowItems);
 	                }.bind(this));
 	            }
 	        }
@@ -468,7 +484,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'remove',
 	        value: function remove(doc, type) {
-	            var _this5 = this;
+	            var _this6 = this;
 
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'remove');
@@ -480,7 +496,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+	                            _pubsubJs2.default.publish(_this6.pubsubKey('remove'), data.nowItems);
 	                        }.bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
@@ -488,22 +504,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            } else {
-	                // 请求次数
-	                var num = _persist2.default.getRequestNum(this.colName);
+	                var inter;
 
-	                for (var i = 0; i < num; i++) {
-	                    if (i == num - 1) {
-	                        return _persist2.default.remove(this.colName, doc, type).then(function (data) {
+	                (function () {
+	                    // 请求次数
+	                    var num = _persist2.default.getRequestNum(_this6.colName);
+	                    var i = 1;
+
+	                    inter = setInterval(function () {
+	                        var _this7 = this;
+
+	                        if (i == num) {
+	                            clearInterval(inter);
+
+	                            return _persist2.default.remove(this.colName, doc, type).then(function (data) {
+	                                // 集合变更，发布事件
+	                                _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
+	                            }.bind(this));
+	                        }
+
+	                        _persist2.default.remove(this.colName, doc, type).then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
+	                            _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
 	                        }.bind(this));
-	                    }
 
-	                    _persist2.default.remove(this.colName, doc, type).then(function (data) {
-	                        // 集合变更，发布事件
-	                        _pubsubJs2.default.publish(_this5.pubsubKey('remove'), data.nowItems);
-	                    }.bind(this));
-	                }
+	                        i++;
+	                    }.bind(_this6), 50);
+	                })();
 	            }
 	        }
 	    }], [{
@@ -659,8 +686,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var sp = Persist.getStoreParam(colName, oper);
 	            // 获取集合主键
 	            var key = Persist.getPrimaryKey(colName);
-	            // 获取图片
-	            var imgs = Persist.getImgList(colName);
 
 	            // 如果没有return参数、return为null或者return为空对象
 	            if (!ret || $.isEmptyObject(ret)) {
@@ -676,7 +701,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                // 根据return返回数据（有return和fileds一般为查询接口）
 	            } else if (ret && mockFields) {
 	                // 生成的对象
-	                var obj = _mockUtils2.default.createMockContent(ret, mockFields, imgs);
+	                var obj = _mockUtils2.default.createMockContent(ret, mockFields);
 	                // 赋值
 	                mockStr[sp] = obj;
 
@@ -778,28 +803,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        /**
-	         * [getImgList 获取图片]
-	         * @param  {[type]} colName [集合名称]
-	         * @return {[type]}         [description]
-	         */
-
-	    }, {
-	        key: 'getImgList',
-	        value: function getImgList(colName) {
-	            // 获得集合相关配置
-	            var col = window.collectionConfig[colName];
-	            // 获得集合图片
-	            return col && col.entity && col.entity.imgList;
-	        }
-	    }, {
-	        key: 'getPrimaryKey',
-
-
-	        /**
 	         * [getPrimaryKey 获得集合主键]
 	         * @param  {[type]} colName [集合名称]
 	         * @return {[type]}         [description]
 	         */
+
+	    }, {
+	        key: 'getPrimaryKey',
 	        value: function getPrimaryKey(colName) {
 	            // 获得集合相关配置
 	            var col = window.collectionConfig[colName];
@@ -905,36 +915,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 
 	            return newdb;
-	        }
-
-	        /**
-	         * [getOtherData 获取其他数据]
-	         * @param  {[type]} chain [返回链]
-	         * @param  {[type]} data [插入数据]
-	         * @return {[type]}         [description]
-	         */
-
-	    }, {
-	        key: 'getOtherData',
-	        value: function getOtherData(chain, data) {
-	            var other = [];
-
-	            if (chain) {
-	                var cArr = chain.split('.');
-	                var last = cArr[cArr.length - 1];
-
-	                for (var i = 0; i < cArr.length - 1; i++) {
-	                    data = data[cArr[i]];
-	                }
-
-	                for (var i in data) {
-	                    if (i != last) {
-	                        other[i] = data[i];
-	                    }
-	                }
-	            }
-
-	            return other;
 	        }
 
 	        /**
@@ -1155,11 +1135,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            var newdb = Persist.getNowdbData(colName, chain, p, data, key);
 
-	            var other = Persist.getOtherData(chain, data);
-
-	            if (other) {
-	                window.db[colName].other = other;
-	            }
+	            window.db[colName].result = data;
 
 	            if (!newdb) {
 	                console.error(colName + '\u8FD4\u56DE\u94FE' + chain + '\uFF0C\u914D\u7F6E\u6709\u8BEF\uFF01');
@@ -1545,7 +1521,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    }, {
 	        key: 'createMockContent',
-	        value: function createMockContent(ret, fields, imgs) {
+	        value: function createMockContent(ret, fields) {
 	            // 赋值操作返回对象
 	            var obj = JSON.parse(JSON.stringify(ret));
 	            // 如果返回配置是对象
@@ -1590,7 +1566,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                            obj[key] = valArr;
 	                        } else {
 	                            // 其他情况字段赋值
-	                            obj[key] = MockUtils.getItemValue(fields[key], levelArr, imgs);
+	                            obj[key] = MockUtils.getItemValue(fields[key], levelArr);
 	                        }
 	                    });
 
@@ -1607,12 +1583,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [getItemValue 根据类型返回相应值]
 	         * @param {[type]} type [类型]
 	         * @param {[type]} levelArr [长度级别数组]
-	         * @param {[type]} imgs [图片]
 	         */
 
 	    }, {
 	        key: 'getItemValue',
-	        value: function getItemValue(type, levelArr, imgs) {
+	        value: function getItemValue(type, levelArr) {
 	            // 返回变量
 	            var value = '';
 
@@ -1632,11 +1607,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else if (type === 'time') {
 	                // 时间戳
 	                value = new Date().getTime();
-	            } /* else if (type === 'img') {
-	                 // 图片
-	                 let k = Math.floor(Math.random() * Object.getOwnPropertyNames(imgs).length) + 1;
-	                 value = imgs[`img${k}`];
-	              }*/
+	            } else if ($.isArray(type)) {
+	                var k = Math.floor(Math.random() * type.length);
+	                value = type[k];
+	            }
 
 	            return value;
 	        }

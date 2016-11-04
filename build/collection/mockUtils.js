@@ -89,7 +89,7 @@ var MockUtils = function () {
 
     }, {
         key: 'createMockContent',
-        value: function createMockContent(ret, fields, imgs) {
+        value: function createMockContent(ret, fields) {
             // 赋值操作返回对象
             var obj = JSON.parse(JSON.stringify(ret));
             // 如果返回配置是对象
@@ -134,7 +134,7 @@ var MockUtils = function () {
                             obj[key] = valArr;
                         } else {
                             // 其他情况字段赋值
-                            obj[key] = MockUtils.getItemValue(fields[key], levelArr, imgs);
+                            obj[key] = MockUtils.getItemValue(fields[key], levelArr);
                         }
                     });
 
@@ -151,12 +151,11 @@ var MockUtils = function () {
          * [getItemValue 根据类型返回相应值]
          * @param {[type]} type [类型]
          * @param {[type]} levelArr [长度级别数组]
-         * @param {[type]} imgs [图片]
          */
 
     }, {
         key: 'getItemValue',
-        value: function getItemValue(type, levelArr, imgs) {
+        value: function getItemValue(type, levelArr) {
             // 返回变量
             var value = '';
 
@@ -176,11 +175,10 @@ var MockUtils = function () {
             } else if (type === 'time') {
                 // 时间戳
                 value = new Date().getTime();
-            } /* else if (type === 'img') {
-                 // 图片
-                 let k = Math.floor(Math.random() * Object.getOwnPropertyNames(imgs).length) + 1;
-                 value = imgs[`img${k}`];
-              }*/
+            } else if ($.isArray(type)) {
+                var k = Math.floor(Math.random() * type.length);
+                value = type[k];
+            }
 
             return value;
         }

@@ -27,7 +27,9 @@ export default class Collection {
      */
     pubsub(p, callback) {
         // 订阅指定集合的事件
-        PubSub.subscribe(this.pubsubKey(p), callback);
+        let pub = PubSub.subscribe(this.pubsubKey(p), callback);
+
+        return pub;
     }
 
     /**
@@ -35,9 +37,9 @@ export default class Collection {
      * @param  {[type]} p [集合操作]
      * @return {[type]}            [description]
      */
-    unsubscribe(p) {
+    unsubscribe(pub) {
         // 取消订阅指定集合的事件
-        PubSub.unsubscribe(this.pubsubKey(p));
+        PubSub.unsubscribe(pub);
     }
 
     /**
@@ -46,6 +48,7 @@ export default class Collection {
      */
     pubsubKey(p) {
         return `collection.${this.colName}.${p}.${this.id}`;
+        // return `collection.${this.colName}.${id}.${p}}`;
     }
 
     /**
@@ -226,20 +229,25 @@ export default class Collection {
         } else {
             // 请求次数
             let num = Persist.getRequestNum(this.colName);
+            let i = 1;
 
-            for (var i = 0; i < num; i++) {
-                if (i == num - 1) {
+            var inter = setInterval(function() {
+                if (i == num) {
+                    clearInterval(inter);
+
                     return Persist.insert(this.colName, doc, type).then(((data) => {
                         // 集合变更发布事件
                         PubSub.publish(this.pubsubKey('insert'), data.nowItems);
                     }).bind(this));
                 }
-                
+
                 Persist.insert(this.colName, doc, type).then(((data) => {
                     // 集合变更发布事件
                     PubSub.publish(this.pubsubKey('insert'), data.nowItems);
                 }).bind(this));
-            }
+
+                i++;
+            }.bind(this), 50);
         }
     }
 
@@ -271,6 +279,8 @@ export default class Collection {
             return Persist.update(this.colName, doc, type).then(((data) => {
                 // 集合变更，发布事件
                 PubSub.publish(this.pubsubKey('update'), data.nowItems);
+                // PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+                // PubSub.publish(this.pubsubKey('find'), data.nowItems);
             }).bind(this));
         }
     }
@@ -302,9 +312,12 @@ export default class Collection {
         } else {
             // 请求次数
             let num = Persist.getRequestNum(this.colName);
+            let i = 1;
 
-            for (var i = 0; i < num; i++) {
-                if (i == num - 1) {
+            var inter = setInterval(function() {
+                if (i == num) {
+                    clearInterval(inter);
+
                     return Persist.remove(this.colName, doc, type).then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey('remove'), data.nowItems);
@@ -315,7 +328,9 @@ export default class Collection {
                     // 集合变更，发布事件
                     PubSub.publish(this.pubsubKey('remove'), data.nowItems);
                 }).bind(this));
-            }
+
+                i++;
+            }.bind(this), 50);
         }
     }
 }

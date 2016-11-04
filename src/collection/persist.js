@@ -124,8 +124,6 @@ export default class Persist {
         let sp = Persist.getStoreParam(colName, oper);
         // 获取集合主键
         let key = Persist.getPrimaryKey(colName);
-        // 获取图片
-        let imgs = Persist.getImgList(colName);
 
         // 如果没有return参数、return为null或者return为空对象
         if (!ret || $.isEmptyObject(ret)) {
@@ -141,7 +139,7 @@ export default class Persist {
             // 根据return返回数据（有return和fileds一般为查询接口）
         } else if (ret && mockFields) {
             // 生成的对象
-            let obj = MockUtils.createMockContent(ret, mockFields, imgs);
+            let obj = MockUtils.createMockContent(ret, mockFields);
             // 赋值
             mockStr[sp] = obj;
 
@@ -226,18 +224,6 @@ export default class Persist {
         // 获得请求次数
         return en && en.requestNum;
     }
-
-    /**
-     * [getImgList 获取图片]
-     * @param  {[type]} colName [集合名称]
-     * @return {[type]}         [description]
-     */
-    static getImgList(colName) {
-        // 获得集合相关配置
-        let col = window.collectionConfig[colName];
-        // 获得集合图片
-        return col && col.entity && col.entity.imgList;
-    };
 
     /**
      * [getPrimaryKey 获得集合主键]
@@ -340,33 +326,6 @@ export default class Persist {
         }
 
         return newdb;
-    }
-
-    /**
-     * [getOtherData 获取其他数据]
-     * @param  {[type]} chain [返回链]
-     * @param  {[type]} data [插入数据]
-     * @return {[type]}         [description]
-     */
-    static getOtherData(chain, data) {
-        let other = [];
-
-        if (chain) {
-            let cArr = chain.split('.');
-            let last = cArr[cArr.length - 1];
-
-            for (var i = 0; i < cArr.length - 1; i++) {
-                data = data[cArr[i]];
-            }
-
-            for (var i in data) {
-                if (i != last) {
-                    other[i] = data[i];
-                }
-            }
-        }
-
-        return other;
     }
 
     /**
@@ -568,11 +527,7 @@ export default class Persist {
 
         let newdb = Persist.getNowdbData(colName, chain, p, data, key);
 
-        let other = Persist.getOtherData(chain, data);
-
-        if (other) {
-            window.db[colName].other = other;
-        }
+        window.db[colName].result = data;
 
         if (!newdb) {
             console.error(`${colName}返回链${chain}，配置有误！`);
