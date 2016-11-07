@@ -1,6 +1,5 @@
 import React from 'react';
 import { render } from 'react-dom';
-import { Map, List } from 'immutable';
 import Utils from '../src/collection/collection-utils';
 import Config from './config/config';
 /*import Local from '../build/localstorage';*/
@@ -15,77 +14,58 @@ class App extends React.Component {
 
         let project = window.db && window.db.project;
 
-        project.pubsub('findOne', (key, data) => {
-        	console.log('findOne ---------- ' + JSON.stringify(data) + ' ++++++++++ ' + Utils.isMap(data));
+        this.state.findOneWidget = project.bindWidget(Utils.uuid(), (key, data) => {
         	this.setState({items: data, colName: '查询单个'});
         })
 
-        project.pubsub('find', (key, data) => {
-        	console.log('find ---------- ' + JSON.stringify(data) + ' ++++++++++ ' + Utils.isList(data));
+        this.state.findWidget = project.bindWidget(Utils.uuid(), (key, data) => {
         	this.setState({items: data, colName: '查询多个'});
         })
 
-        project.pubsub('insert', (key, data) => {
-        	console.log('insert ---------- ' + JSON.stringify(data) + ' ++++++++++ ' + Utils.isMap(data));
+        this.state.insertWidget = project.bindWidget(Utils.uuid(), (key, data) => {
         	this.setState({items: data, colName: '新建'});
         })
 
-        project.pubsub('update', (key, data) => {
-        	console.log('update ---------- ' + JSON.stringify(data) + ' ++++++++++ ' + Utils.isMap(data));
+        this.state.updateWidget = project.bindWidget(Utils.uuid(), (key, data) => {
         	this.setState({items: data, colName: '修改（为了测试，修改的数据为第一条数据）'});
         })
 
-        project.pubsub('remove', (key, data) => {
-        	console.log('remove ---------- ' + JSON.stringify(data) + ' ++++++++++ ' + Utils.isMap(data));
+        this.state.removeWidget = project.bindWidget(Utils.uuid(), (key, data) => {
         	this.setState({items: data, colName: '删除（为了测试，删除的数据为第一条数据）'});
         })
     }
 
 	handleQuery() {
-		let project = window.db && window.db.project;
-		project.findOne({projectId:"8c8c8ca956e00caa0156e8be040400dc"});
-		console.log(window.localStorage.getItem('db'));
+		let findW = this.state.findOneWidget;
+		findW.findOne({projectId:"8c8c8ca956e00caa0156e8be040400dc"});
 	}
 
 	handleQueryMore() {
-		let project = window.db && window.db.project;
-		project.find({projectId:"8c8c8ca9543dbb2901544b98df3d0963"});
-		
-		console.log(window.localStorage.getItem('db'));
+		this.state.findWidget.find({projectId:"8c8c8ca9543dbb2901544b98df3d0963"});
 	}
 
 	handleAdd() {
-		let project = window.db && window.db.project;
-		project.insert({projectName:"云澹澹，水悠悠", projectManager: "沈佳芳", projectIcon: "默认图片", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", projectDesc:"", commonFlag:"16001", fileListStr:{"inFile":[{"fileName":"item_logo_4.png","fileType":"60100","sysDefault":"0"}]}, importanceLevel:"41001", addTagName:{"addTagList":[]}});
-		
-		console.log(window.localStorage.getItem('db'));
+		this.state.insertWidget.insert({projectName:"云澹澹，水悠悠", projectManager: "沈佳芳", projectIcon: "默认图片", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", projectDesc:"", commonFlag:"16001", fileListStr:{"inFile":[{"fileName":"item_logo_4.png","fileType":"60100","sysDefault":"0"}]}, importanceLevel:"41001", addTagName:{"addTagList":[]}});
 	}
 
 	handleUpdate() {
-		let project = window.db && window.db.project;
-		let id = project.items && project.items.first().projectId;
-		project.update({projectId:id, projectName:"云澹澹，水悠悠，一声横笛锁空楼"});
-		
-		console.log(window.localStorage.getItem('db'));
+		let id = db.project.items.first() && db.project.items.first().projectId;
+		this.state.updateWidget.update({projectId:id, projectName:"云澹澹，水悠悠，一声横笛锁空楼"});
 	}
 
 	handleDetele() {
-		let project = window.db && window.db.project;
-		let id = project.items && project.items.first().projectId;
-		project.remove({projectId: id});
-		
-		console.log(window.localStorage.getItem('db'));
+		let id = db.project.items.first() && db.project.items.first().projectId;
+		this.state.removeWidget.remove({projectId: id});
 	}
 
 	loginOut() {
-		window.location.href = 'http://www.baidu.com';
+		this.state.findOneWidget.unsubscribe();
+		this.state.findWidget.unsubscribe();
+		this.state.insertWidget.unsubscribe();
+		this.state.updateWidget.unsubscribe();
+		this.state.removeWidget.unsubscribe();
 
-		let project = window.db && window.db.project;
-		project.unsubscribe('findOne');
-		project.unsubscribe('find');
-		project.unsubscribe('insert');
-		project.unsubscribe('update');
-		project.unsubscribe('remove');
+		window.location.href = 'http://www.baidu.com';
 	}
 
 	render() {
@@ -115,11 +95,11 @@ class App extends React.Component {
 			<div style={{fontFamily: '微软雅黑'}}>
 				<div>
 					<button style={blue_button} onClick={this.handleQuery.bind(this)}>查询</button>
-					<button className="blue_button" onClick={this.handleQueryMore}>多个查询</button>
-					<button className="blue_button" onClick={this.handleAdd}>新建</button>
-					<button className="blue_button" onClick={this.handleUpdate}>修改</button>
-					<button className="blue_button" onClick={this.handleDetele}>删除</button>
-					<button className="blue_button" onClick={this.loginOut}>跳往百度</button>
+					<button className="blue_button" onClick={this.handleQueryMore.bind(this)}>多个查询</button>
+					<button className="blue_button" onClick={this.handleAdd.bind(this)}>新建</button>
+					<button className="blue_button" onClick={this.handleUpdate.bind(this)}>修改</button>
+					<button className="blue_button" onClick={this.handleDetele.bind(this)}>删除</button>
+					<button className="blue_button" onClick={this.loginOut.bind(this)}>跳往百度</button>
 				</div>
 				<br/>
 				<div>

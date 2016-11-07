@@ -48,44 +48,37 @@ var Collection = function () {
     }
 
     /**
-     * [pubsub 集合变更，事件订阅]
+     * [bindWidget 绑定组件]
      * @param  {Function} callback [集合变更，回调执行函数]
      * @return {[type]}            [description]
      */
 
 
     _createClass(Collection, [{
-        key: 'pubsub',
-        value: function pubsub(p, callback) {
+        key: 'bindWidget',
+        value: function bindWidget(id, callback) {
+            // 组件
+            var w = {};
+            // 组件id
+            w._id = id;
+            w.colName = this.colName;
+            w.pubsubKey = this.colName + '.' + id;
+            // 组件方法
+            w.findOne = this.findOne.bind(w);
+            w.find = this.find.bind(w);
+            w.insert = this.insert.bind(w);
+            w.update = this.update.bind(w);
+            w.remove = this.remove.bind(w);
+
             // 订阅指定集合的事件
-            var pub = _pubsubJs2.default.subscribe(this.pubsubKey(p), callback);
+            var pub = _pubsubJs2.default.subscribe(w.pubsubKey, callback);
 
-            return pub;
-        }
+            // 取消事件订阅
+            w.unsubscribe = function () {
+                _pubsubJs2.default.unsubscribe(pub);
+            };
 
-        /**
-         * [unsubscribe 取消事件订阅]
-         * @param  {[type]} p [集合操作]
-         * @return {[type]}            [description]
-         */
-
-    }, {
-        key: 'unsubscribe',
-        value: function unsubscribe(pub) {
-            // 取消订阅指定集合的事件
-            _pubsubJs2.default.unsubscribe(pub);
-        }
-
-        /**
-         * [pubsubKey 生成订阅事件key]
-         * @return {[type]} [description]
-         */
-
-    }, {
-        key: 'pubsubKey',
-        value: function pubsubKey(p) {
-            return 'collection.' + this.colName + '.' + p + '.' + this.id;
-            // return `collection.${this.colName}.${id}.${p}}`;
+            return w;
         }
 
         /**
@@ -101,6 +94,7 @@ var Collection = function () {
 
         /**
          * [findOne 查询数据详情]
+         * @param  {[type]} id [组件id]
          * @param  {[type]} doc [查询对象 或 数据编号]
          * @param  {[type]} type [url类型]
          * @return {[type]}     [description]
@@ -114,22 +108,22 @@ var Collection = function () {
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'), type);
+                var mock = _persist2.default.findOne(this.colName, doc, this.pubsubKey, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
+                            _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更发布事件
-                        _pubsubJs2.default.publish(this.pubsubKey('findOne'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey, mock.nowItems);
                     }
                 }
             } else {
-                return _persist2.default.findOne(this.colName, doc, this.pubsubKey('findOne'), type).then(function (data) {
+                return _persist2.default.findOne(this.colName, doc, this.pubsubKey, type).then(function (data) {
                     // 集合变更发布事件
-                    _pubsubJs2.default.publish(_this.pubsubKey('findOne'), data.nowItems);
+                    _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
                 }.bind(this));
             }
         }
@@ -192,17 +186,17 @@ var Collection = function () {
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.find(this.colName, doc, val, this.pubsubKey('find'), type);
+                var mock = _persist2.default.find(this.colName, doc, val, this.pubsubKey, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
+                            _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         var deferred = $.Deferred();
                         // 集合变更发布事件
-                        _pubsubJs2.default.publish(this.pubsubKey('find'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey, mock.nowItems);
                         deferred.resolve();
 
                         return deferred.promise();
@@ -210,9 +204,9 @@ var Collection = function () {
                 }
             } else {
                 // 调用持久化对象 查询 数据详情
-                return _persist2.default.find(this.colName, query, val, this.pubsubKey('find'), type).then(function (data) {
+                return _persist2.default.find(this.colName, query, val, this.pubsubKey, type).then(function (data) {
                     // 集合变更发布事件
-                    _pubsubJs2.default.publish(_this2.pubsubKey('find'), data.nowItems);
+                    _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
                 }.bind(this));
             }
         }
@@ -239,11 +233,11 @@ var Collection = function () {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this3.pubsubKey('insert'), data.nowItems);
+                            _pubsubJs2.default.publish(_this3.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
-                        _pubsubJs2.default.publish(this.pubsubKey('insert'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey, mock.nowItems);
                     }
                 }
             } else {
@@ -262,13 +256,13 @@ var Collection = function () {
 
                             return _persist2.default.insert(this.colName, doc, type).then(function (data) {
                                 // 集合变更发布事件
-                                _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
+                                _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
                             }.bind(this));
                         }
 
                         _persist2.default.insert(this.colName, doc, type).then(function (data) {
                             // 集合变更发布事件
-                            _pubsubJs2.default.publish(_this4.pubsubKey('insert'), data.nowItems);
+                            _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
                         }.bind(this));
 
                         i++;
@@ -299,19 +293,19 @@ var Collection = function () {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
+                            _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
-                        _pubsubJs2.default.publish(this.pubsubKey('update'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey, mock.nowItems);
                     }
                 }
             } else {
                 return _persist2.default.update(this.colName, doc, type).then(function (data) {
                     // 集合变更，发布事件
-                    _pubsubJs2.default.publish(_this5.pubsubKey('update'), data.nowItems);
-                    // PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
-                    // PubSub.publish(this.pubsubKey('find'), data.nowItems);
+                    _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
+                    // PubSub.publish(this.pubsubKey, data.nowItems);
+                    // PubSub.publish(this.pubsubKey, data.nowItems);
                 }.bind(this));
             }
         }
@@ -338,11 +332,11 @@ var Collection = function () {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this6.pubsubKey('remove'), data.nowItems);
+                            _pubsubJs2.default.publish(_this6.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
-                        _pubsubJs2.default.publish(this.pubsubKey('remove'), mock.nowItems);
+                        _pubsubJs2.default.publish(this.pubsubKey, mock.nowItems);
                     }
                 }
             } else {
@@ -361,13 +355,13 @@ var Collection = function () {
 
                             return _persist2.default.remove(this.colName, doc, type).then(function (data) {
                                 // 集合变更，发布事件
-                                _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
+                                _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
                             }.bind(this));
                         }
 
                         _persist2.default.remove(this.colName, doc, type).then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this7.pubsubKey('remove'), data.nowItems);
+                            _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
                         }.bind(this));
 
                         i++;

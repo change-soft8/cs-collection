@@ -21,34 +21,33 @@ export default class Collection {
     }
 
     /**
-     * [pubsub 集合变更，事件订阅]
+     * [bindWidget 绑定组件]
      * @param  {Function} callback [集合变更，回调执行函数]
      * @return {[type]}            [description]
      */
-    pubsub(p, callback) {
+    bindWidget(id, callback) {
+        // 组件
+        var w = {};
+        // 组件id
+        w._id = id;
+        w.colName = this.colName;
+        w.pubsubKey = `${this.colName}.${id}`;
+        // 组件方法
+        w.findOne = this.findOne.bind(w);
+        w.find = this.find.bind(w);
+        w.insert = this.insert.bind(w);
+        w.update = this.update.bind(w);
+        w.remove = this.remove.bind(w);
+
         // 订阅指定集合的事件
-        let pub = PubSub.subscribe(this.pubsubKey(p), callback);
+        let pub = PubSub.subscribe(w.pubsubKey, callback);
 
-        return pub;
-    }
+        // 取消事件订阅
+        w.unsubscribe = () => {
+            PubSub.unsubscribe(pub);
+        }
 
-    /**
-     * [unsubscribe 取消事件订阅]
-     * @param  {[type]} p [集合操作]
-     * @return {[type]}            [description]
-     */
-    unsubscribe(pub) {
-        // 取消订阅指定集合的事件
-        PubSub.unsubscribe(pub);
-    }
-
-    /**
-     * [pubsubKey 生成订阅事件key]
-     * @return {[type]} [description]
-     */
-    pubsubKey(p) {
-        return `collection.${this.colName}.${p}.${this.id}`;
-        // return `collection.${this.colName}.${id}.${p}}`;
+        return w;
     }
 
     /**
@@ -92,6 +91,7 @@ export default class Collection {
 
     /**
      * [findOne 查询数据详情]
+     * @param  {[type]} id [组件id]
      * @param  {[type]} doc [查询对象 或 数据编号]
      * @param  {[type]} type [url类型]
      * @return {[type]}     [description]
@@ -103,22 +103,22 @@ export default class Collection {
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.findOne(this.colName, doc, this.pubsubKey('findOne'), type);
+            let mock = Persist.findOne(this.colName, doc, this.pubsubKey, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 } else {
                     // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('findOne'), mock.nowItems);
+                    PubSub.publish(this.pubsubKey, mock.nowItems);
                 }
             }
         } else {
-            return Persist.findOne(this.colName, doc, this.pubsubKey('findOne'), type).then(((data) => {
+            return Persist.findOne(this.colName, doc, this.pubsubKey, type).then(((data) => {
                 // 集合变更发布事件
-                PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
+                PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
         }
     }
@@ -176,17 +176,17 @@ export default class Collection {
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.find(this.colName, doc, val, this.pubsubKey('find'), type);
+            let mock = Persist.find(this.colName, doc, val, this.pubsubKey, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('find'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 } else {
                     let deferred = $.Deferred();
                     // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('find'), mock.nowItems);
+                    PubSub.publish(this.pubsubKey, mock.nowItems);
                     deferred.resolve();
 
                     return deferred.promise();
@@ -195,9 +195,9 @@ export default class Collection {
 
         } else {
             // 调用持久化对象 查询 数据详情
-            return Persist.find(this.colName, query, val, this.pubsubKey('find'), type).then(((data) => {
+            return Persist.find(this.colName, query, val, this.pubsubKey, type).then(((data) => {
                 // 集合变更发布事件
-                PubSub.publish(this.pubsubKey('find'), data.nowItems);
+                PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
         }
     }
@@ -219,11 +219,11 @@ export default class Collection {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 } else {
                     // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey('insert'), mock.nowItems);
+                    PubSub.publish(this.pubsubKey, mock.nowItems);
                 }
             }
         } else {
@@ -237,13 +237,13 @@ export default class Collection {
 
                     return Persist.insert(this.colName, doc, type).then(((data) => {
                         // 集合变更发布事件
-                        PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 }
 
                 Persist.insert(this.colName, doc, type).then(((data) => {
                     // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey('insert'), data.nowItems);
+                    PubSub.publish(this.pubsubKey, data.nowItems);
                 }).bind(this));
 
                 i++;
@@ -268,19 +268,19 @@ export default class Collection {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('update'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 } else {
                     // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey('update'), mock.nowItems);
+                    PubSub.publish(this.pubsubKey, mock.nowItems);
                 }
             }
         } else {
             return Persist.update(this.colName, doc, type).then(((data) => {
                 // 集合变更，发布事件
-                PubSub.publish(this.pubsubKey('update'), data.nowItems);
-                // PubSub.publish(this.pubsubKey('findOne'), data.nowItems);
-                // PubSub.publish(this.pubsubKey('find'), data.nowItems);
+                PubSub.publish(this.pubsubKey, data.nowItems);
+                // PubSub.publish(this.pubsubKey, data.nowItems);
+                // PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
         }
     }
@@ -302,11 +302,11 @@ export default class Collection {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 } else {
                     // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey('remove'), mock.nowItems);
+                    PubSub.publish(this.pubsubKey, mock.nowItems);
                 }
             }
         } else {
@@ -320,13 +320,13 @@ export default class Collection {
 
                     return Persist.remove(this.colName, doc, type).then(((data) => {
                         // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                        PubSub.publish(this.pubsubKey, data.nowItems);
                     }).bind(this));
                 }
 
                 Persist.remove(this.colName, doc, type).then(((data) => {
                     // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey('remove'), data.nowItems);
+                    PubSub.publish(this.pubsubKey, data.nowItems);
                 }).bind(this));
 
                 i++;

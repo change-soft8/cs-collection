@@ -33,78 +33,68 @@ export default {
 -  project.conf.js是一个集合对象文件。开发者可根据自身项目需求，配置多个集合对象文件。
 
 ###### 2. 使用集合组件
--  在入口文件中，引用配置文件、集合组件，New一个集合组件对象。
+-  在入口文件中，引用配置文件、集合插件，New一个集合对象。
 import Config from './config/config';
 import Collection from 'cs-collection';
-let collection = new Collection(Config, 'en', '{"time": 34,"code": "SUCCESS","message": "操作成功","entity": ""}');
+let collection = new Collection(Config, 参数2, 参数3);
+
+    参数2：可选。随机生成的mock国际化参数，目前支持'en','zh'
+    
+    参数3：可选。如果mock情况下没有return，也没有mockUrl，则通过这个参数传mock的json
+
+
 此举是为了初始集合对象，生成window.db（集合对象操作都是围绕着window.db展开的）
 
--  使用集合方法：增删改查
+
+-  给集合绑定widget组件，拿数据
     
 ```
-let project = window.db && window.db.project;
-let member = window.db && window.db.member;
+let project = db && db.project;
+let member = db && db.member;
+
+let widget = project.bindWidget(Utils.uuid(), (key, data) => {
+    //...
+})
+
+let memberW = member.bindWidget(Utils.uuid(), (key, data) => {
+    //...
+})
+
+    
+```
+-  使用集合方法：增删改查
+```
+新增了widget组件概念
 
 查询单个：
-project.findOne(参数1);
+widget.findOne(参数1);
 参数1：查询对象的主键，支持string格式，也支持object格式
-示例1：project.findOne("8c8c8ca956e00caa0156e8be040400dc");
-示例2：project.findOne({projectId:"8c8c8ca956e00caa0156e8be040400dc"});
+示例1：widget.findOne("8c8c8ca956e00caa0156e8be040400dc");
+示例2：widget.findOne({projectId:"8c8c8ca956e00caa0156e8be040400dc"});
 
 查询多个：
-project.find(参数1, [参数2]);
+widget.find(参数1, [参数2]);
 参数1：查询参数，如果查询全部，传''；如果有查询条件，则以object形式传参，支持in查询器
 参数2：可选，其他对象主键值。用以支持接口url中包含其他对象主键值。
-示例1：project.find({projectManager:"shenjiafang"});
-示例2：member.find('', '8c8c8ca956e00caa0156e8be040400dc');
+示例1：widget.find({projectManager:"shenjiafang"});
+示例2：memberW.find('', '8c8c8ca956e00caa0156e8be040400dc');
 
 新建：
-project.insert(参数1);
+widget.insert(参数1);
 参数1：新建对象参数
-示例：project.insert({projectName:"云澹澹，水悠悠", projectManager: "shenjiafang", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", commonFlag:"16001",importanceLevel:"41001"});
+示例：widget.insert({projectName:"云澹澹，水悠悠", projectManager: "shenjiafang", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", commonFlag:"16001",importanceLevel:"41001"});
 
 修改：
-project.update(参数1);
+widget.update(参数1);
 参数1：修改对象参数，参数格式为object，其中修改对象主键是此参数中必要键值对。
-示例：project.update({projectId:"8c8c8ca956e00caa0156e8be040400dc", projectName:"云澹澹，水悠悠，一声横笛锁空楼"});
+示例：widget.update({projectId:"8c8c8ca956e00caa0156e8be040400dc", projectName:"云澹澹，水悠悠，一声横笛锁空楼"});
 
 删除：
-project.remove(参数1);
+widget.remove(参数1);
 参数1：删除对象主键，支持string格式，也支持object格式
-示例1：project.remove("8c8c8ca956e00caa0156e8be040400dc");
-示例2：project.remove({projectId: "8c8c8ca956e00caa0156e8be040400dc"});
-```
-
-
--  订阅事件，拿到数据
-    
-```
-查询单个订阅事件：
-project.pubsub('findOne', (key, data) => {
-        //...
-    })
-
-查询多个订阅事件：
-project.pubsub('find', (key, data) => {
-        //...
-    })
-
-新建订阅事件：
-project.pubsub('insert', (key, data) => {
-        //...
-    })
-
-修改订阅事件：
-project.pubsub('update', (key, data) => {
-        //...
-    })
-
-删除订阅事件：
-project.pubsub('remove', (key, data) => {
-        //...
-    })
-```
-
+示例1：widget.remove("8c8c8ca956e00caa0156e8be040400dc");
+示例2：widget.remove({projectId: "8c8c8ca956e00caa0156e8be040400dc"});
+``` 
 
 ##### 3.mock数据
 
@@ -122,8 +112,8 @@ project.pubsub('remove', (key, data) => {
 -  find方法支持接口url中有其他对象主键
 例如成员对象的主键为userId，项目成员的查询接口url为/v2/project/{projectId}/projectMember，url中间有项目对象的主键。此种情况，需要如下调用：
 //假设我们已经配置好了成员对象文件
-let member = window.db && window.db.member;
-member.find('', '8c8c8ca956e00caa0156e8be040400dc');
+
+widget.find('', '8c8c8ca956e00caa0156e8be040400dc');
 
    这里第一个参数仍旧为查询项目成员的参数，第二个参数支持其他对象主键
 

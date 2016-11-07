@@ -199,10 +199,8 @@ var Persist = function () {
         value: function getCacheTimeOut(colName) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
-            // 获得集合--entity
-            var en = col && col.entity;
             // 获得过期时间
-            return en && en.cacheTimeOut;
+            return col && col.cacheTimeOut;
         }
 
         /**
@@ -216,10 +214,8 @@ var Persist = function () {
         value: function getRequestNum(colName) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
-            // 获得集合--entity
-            var en = col && col.entity;
             // 获得请求次数
-            return en && en.requestNum;
+            return col && col.requestNum;
         }
 
         /**
