@@ -140,15 +140,16 @@ export default {
                     //mock数据路径
                     "mockUrl": "mock/success.json"*/
     },
+    // 过期
     "cacheTimeOut": 5184000,
     // 请求次数
     "requestNum": 5,
     // 实体字段配置，根据mock级别 + 数据类型 = mock属性长度
-    // 实体相关配置
+    
     "entity": {
         // 实体主键
         "primaryKey": "projectId",
-        // 过期
+        // 实体相关配置
         "fields": {
             "projectId": "string",
             "projectName": "string",

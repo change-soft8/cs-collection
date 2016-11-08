@@ -18,10 +18,13 @@ export default class Collection {
         this.colName = colName;
         // 初始化参数为集合
         this.items = Utils.getList(list);
+        // 初始化组件
+        this.widgets = [];
     }
 
     /**
      * [bindWidget 绑定组件]
+     * @param  {[type]} id [组件Id]
      * @param  {Function} callback [集合变更，回调执行函数]
      * @return {[type]}            [description]
      */
@@ -29,7 +32,7 @@ export default class Collection {
         // 组件
         var w = {};
         // 组件id
-        w._id = id;
+        w.id = id;
         w.colName = this.colName;
         w.pubsubKey = `${this.colName}.${id}`;
         // 组件方法
@@ -40,14 +43,36 @@ export default class Collection {
         w.remove = this.remove.bind(w);
 
         // 订阅指定集合的事件
-        let pub = PubSub.subscribe(w.pubsubKey, callback);
+        w.pubsub = PubSub.subscribe(w.pubsubKey, callback);
 
         // 取消事件订阅
         w.unsubscribe = () => {
-            PubSub.unsubscribe(pub);
+            PubSub.unsubscribe(w.pubsub);
         }
 
+        // 存放组件
+        this.widgets.push({ widget: w });
+
         return w;
+    }
+
+    /**
+     * [publishRelated 发布关联事件]
+     * @param  {[type]} colName [集合名称]
+     * @return {[type]}            [description]
+     */
+    static publishRelated(colName) {
+        let w = window.db && window.db[colName] && window.db[colName].widgets;
+        let db = window.db && window.db[colName] && window.db[colName].items;
+
+        for (var i = 0; i < w.length; i++) {
+            let query = w[i].query;
+            let match = Utils.filterListKey(db, query);
+
+            if (match) {
+                PubSub.publish(w[i].widget.pubsubKey, match);
+            }
+        }
     }
 
     /**
@@ -97,13 +122,60 @@ export default class Collection {
      * @return {[type]}     [description]
      */
     findOne(doc, type) {
+        // 初始化请求数据
+        let query = {};
+        // 不符合查询规则
+        if (doc && typeof(doc) == "object") {
+            // 如果传入数据为 object 类型
+            for (let key in doc) {
+                let value = doc[key];
+                if (typeof(value) != "object") {
+                    // 等值搜索
+                    query[key] = value;
+                } else {
+                    // 条件搜索
+                    for (let inKey in value) {
+                        // 查询器的值
+                        let inValue = value[inKey];
+                        if (inKey.indexOf("$") == 0) {
+                            // 搜索查询器
+                            let tag = inKey;
+
+                            // 按照 查询器 解析 查询条件
+                            try {
+                                let v = Query[tag](inValue);
+                                if (v) {
+                                    query[key] = v
+                                } else {
+                                    return false;
+                                }
+                            } catch (e) {
+                                // 查询器暂不支持;
+                                return false;
+                            }
+                        } else {
+                            // 条件搜搜的查询器不是以 $ 开头
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+
         // 清缓存
         Collection.clearCacheData(this.colName, 'findOne');
+
+        let w = db[this.colName].widgets;
+        for (var i = 0; i < w.length; i++) {
+            if (w[i].widget.id == this.id) {
+                w[i].query = doc;
+            }
+        }
 
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.findOne(this.colName, doc, this.pubsubKey, type);
+            let mock = Persist.findOne.bind(this)(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -116,7 +188,7 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.findOne(this.colName, doc, this.pubsubKey, type).then(((data) => {
+            return Persist.findOne.bind(this)(this.colName, doc, type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
@@ -126,6 +198,7 @@ export default class Collection {
     /**
      * [find 根据查询器，查询集合]
      * @param  {[type]} doc   [查询器]
+     * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
      * @param  {[type]} type [url类型]
      * @return {[type]}       [description]
      */
@@ -173,10 +246,17 @@ export default class Collection {
         // 清缓存
         Collection.clearCacheData(this.colName, 'find');
 
+        let w = db[this.colName].widgets;
+        for (var i = 0; i < w.length; i++) {
+            if (w[i].widget.id == this.id) {
+                w[i].query = query;
+            }
+        }
+
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.find(this.colName, doc, val, this.pubsubKey, type);
+            let mock = Persist.find.bind(this)(doc, query, val, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -195,7 +275,7 @@ export default class Collection {
 
         } else {
             // 调用持久化对象 查询 数据详情
-            return Persist.find(this.colName, query, val, this.pubsubKey, type).then(((data) => {
+            return Persist.find.bind(this)(doc, query, val, type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
@@ -214,7 +294,7 @@ export default class Collection {
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock
-            let mock = Persist.insert(this.colName, doc, type);
+            let mock = Persist.insert.bind(this)(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -231,23 +311,26 @@ export default class Collection {
             let num = Persist.getRequestNum(this.colName);
             let i = 1;
 
-            var inter = setInterval(function() {
-                if (i == num) {
-                    clearInterval(inter);
+            let p = Persist.insert.bind(this)(this.colName, doc, type).then(((data) => {
+                // 集合变更发布事件
+                PubSub.publish(this.pubsubKey, data.nowItems);
 
-                    return Persist.insert(this.colName, doc, type).then(((data) => {
-                        // 集合变更发布事件
-                        PubSub.publish(this.pubsubKey, data.nowItems);
-                    }).bind(this));
-                }
+                Collection.publishRelated(this.colName);
+            }).bind(this));
 
-                Persist.insert(this.colName, doc, type).then(((data) => {
-                    // 集合变更发布事件
-                    PubSub.publish(this.pubsubKey, data.nowItems);
-                }).bind(this));
+            if (num > 1) {
+                var inter = setInterval(function() {
+                    if (i == num - 1) {
+                        clearInterval(inter);
+                    }
 
-                i++;
-            }.bind(this), 50);
+                    Persist.insert(this.colName, doc, type);
+
+                    i++;
+                }.bind(this), 50);
+            }
+
+            return p;
         }
     }
 
@@ -263,7 +346,7 @@ export default class Collection {
         // 调用持久对象，更新单条数据
         if (Persist.isMock) {
             // mock
-            let mock = Persist.update(this.colName, doc, type);
+            let mock = Persist.update.bind(this)(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -276,11 +359,11 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.update(this.colName, doc, type).then(((data) => {
+            return Persist.update.bind(this)(this.colName, doc, type).then(((data) => {
                 // 集合变更，发布事件
                 PubSub.publish(this.pubsubKey, data.nowItems);
-                // PubSub.publish(this.pubsubKey, data.nowItems);
-                // PubSub.publish(this.pubsubKey, data.nowItems);
+
+                Collection.publishRelated(this.colName);
             }).bind(this));
         }
     }
@@ -297,7 +380,7 @@ export default class Collection {
         // 调用持久对象，更新单条数据
         if (Persist.isMock) {
             // mock
-            let mock = Persist.remove(this.colName, doc, type);
+            let mock = Persist.remove.bind(this)(this.colName, doc, type);
             if (mock) {
                 if (typeof(mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -314,23 +397,26 @@ export default class Collection {
             let num = Persist.getRequestNum(this.colName);
             let i = 1;
 
-            var inter = setInterval(function() {
-                if (i == num) {
-                    clearInterval(inter);
+            let p = Persist.remove.bind(this)(this.colName, doc, type).then(((data) => {
+                // 集合变更，发布事件
+                PubSub.publish(this.pubsubKey, data.nowItems);
 
-                    return Persist.remove(this.colName, doc, type).then(((data) => {
-                        // 集合变更，发布事件
-                        PubSub.publish(this.pubsubKey, data.nowItems);
-                    }).bind(this));
-                }
+                Collection.publishRelated(this.colName);
+            }).bind(this));
 
-                Persist.remove(this.colName, doc, type).then(((data) => {
-                    // 集合变更，发布事件
-                    PubSub.publish(this.pubsubKey, data.nowItems);
-                }).bind(this));
+            if (num > 1) {
+                var inter = setInterval(function() {
+                    if (i == num - 1) {
+                        clearInterval(inter);
+                    }
 
-                i++;
-            }.bind(this), 50);
+                    Persist.remove(this.colName, doc, type);
+
+                    i++;
+                }.bind(this), 50);
+            }
+
+            return p;
         }
     }
 }

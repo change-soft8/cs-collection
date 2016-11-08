@@ -41,11 +41,11 @@ class App extends React.Component {
 	}
 
 	handleQueryMore() {
-		this.state.findWidget.find({projectId:"8c8c8ca9543dbb2901544b98df3d0963"});
+		this.state.findWidget.find({projectManager:"shenjiafang"});
 	}
 
 	handleAdd() {
-		this.state.insertWidget.insert({projectName:"云澹澹，水悠悠", projectManager: "沈佳芳", projectIcon: "默认图片", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", projectDesc:"", commonFlag:"16001", fileListStr:{"inFile":[{"fileName":"item_logo_4.png","fileType":"60100","sysDefault":"0"}]}, importanceLevel:"41001", addTagName:{"addTagList":[]}});
+		this.state.insertWidget.insert({projectName:"云澹澹，水悠悠", projectManager: "shenjiafang", projectIcon: "默认图片", projectNameShort:"sjzmd", projectCode:"wyqkk", projectNameSpace:"sjzmdqkk", projectDesc:"", commonFlag:"16001", fileListStr:{"inFile":[{"fileName":"item_logo_4.png","fileType":"60100","sysDefault":"0"}]}, importanceLevel:"41001", addTagName:{"addTagList":[]}});
 	}
 
 	handleUpdate() {

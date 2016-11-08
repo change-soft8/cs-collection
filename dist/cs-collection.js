@@ -203,10 +203,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.colName = colName;
 	        // 初始化参数为集合
 	        this.items = _collectionUtils2.default.getList(list);
+	        // 初始化组件
+	        this.widgets = [];
 	    }
 
 	    /**
 	     * [bindWidget 绑定组件]
+	     * @param  {[type]} id [组件Id]
 	     * @param  {Function} callback [集合变更，回调执行函数]
 	     * @return {[type]}            [description]
 	     */
@@ -218,7 +221,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 组件
 	            var w = {};
 	            // 组件id
-	            w._id = id;
+	            w.id = id;
 	            w.colName = this.colName;
 	            w.pubsubKey = this.colName + '.' + id;
 	            // 组件方法
@@ -229,21 +232,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	            w.remove = this.remove.bind(w);
 
 	            // 订阅指定集合的事件
-	            var pub = _pubsubJs2.default.subscribe(w.pubsubKey, callback);
+	            w.pubsub = _pubsubJs2.default.subscribe(w.pubsubKey, callback);
 
 	            // 取消事件订阅
 	            w.unsubscribe = function () {
-	                _pubsubJs2.default.unsubscribe(pub);
+	                _pubsubJs2.default.unsubscribe(w.pubsub);
 	            };
+
+	            // 存放组件
+	            this.widgets.push({ widget: w });
 
 	            return w;
 	        }
 
 	        /**
-	         * [clearCacheData 清除缓存数据]
+	         * [publishRelated 发布关联事件]
 	         * @param  {[type]} colName [集合名称]
-	         * @param  {[type]} p [操作]
-	         * @return {[type]}         [description]
+	         * @return {[type]}            [description]
 	         */
 
 	    }, {
@@ -260,13 +265,60 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: function findOne(doc, type) {
 	            var _this = this;
 
+	            // 初始化请求数据
+	            var query = {};
+	            // 不符合查询规则
+	            if (doc && (typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) == "object") {
+	                // 如果传入数据为 object 类型
+	                for (var key in doc) {
+	                    var value = doc[key];
+	                    if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) != "object") {
+	                        // 等值搜索
+	                        query[key] = value;
+	                    } else {
+	                        // 条件搜索
+	                        for (var inKey in value) {
+	                            // 查询器的值
+	                            var inValue = value[inKey];
+	                            if (inKey.indexOf("$") == 0) {
+	                                // 搜索查询器
+	                                var tag = inKey;
+
+	                                // 按照 查询器 解析 查询条件
+	                                try {
+	                                    var v = _query2.default[tag](inValue);
+	                                    if (v) {
+	                                        query[key] = v;
+	                                    } else {
+	                                        return false;
+	                                    }
+	                                } catch (e) {
+	                                    // 查询器暂不支持;
+	                                    return false;
+	                                }
+	                            } else {
+	                                // 条件搜搜的查询器不是以 $ 开头
+	                                return false;
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'findOne');
+
+	            var w = db[this.colName].widgets;
+	            for (var i = 0; i < w.length; i++) {
+	                if (w[i].widget.id == this.id) {
+	                    w[i].query = doc;
+	                }
+	            }
 
 	            // 调用持久化对象 查询 数据详情
 	            if (_persist2.default.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.findOne(this.colName, doc, this.pubsubKey, type);
+	                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
@@ -279,7 +331,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.findOne(this.colName, doc, this.pubsubKey, type).then(function (data) {
+	                return _persist2.default.findOne.bind(this)(this.colName, doc, type).then(function (data) {
 	                    // 集合变更发布事件
 	                    _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
 	                }.bind(this));
@@ -289,6 +341,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        /**
 	         * [find 根据查询器，查询集合]
 	         * @param  {[type]} doc   [查询器]
+	         * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
 	         * @param  {[type]} type [url类型]
 	         * @return {[type]}       [description]
 	         */
@@ -341,10 +394,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'find');
 
+	            var w = db[this.colName].widgets;
+	            for (var i = 0; i < w.length; i++) {
+	                if (w[i].widget.id == this.id) {
+	                    w[i].query = query;
+	                }
+	            }
+
 	            // 调用持久化对象 查询 数据详情
 	            if (_persist2.default.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.find(this.colName, doc, val, this.pubsubKey, type);
+	                var mock = _persist2.default.find.bind(this)(doc, query, val, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
@@ -362,7 +422,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            } else {
 	                // 调用持久化对象 查询 数据详情
-	                return _persist2.default.find(this.colName, query, val, this.pubsubKey, type).then(function (data) {
+	                return _persist2.default.find.bind(this)(doc, query, val, type).then(function (data) {
 	                    // 集合变更发布事件
 	                    _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
 	                }.bind(this));
@@ -386,7 +446,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 调用持久化对象 查询 数据详情
 	            if (_persist2.default.isMock) {
 	                // mock
-	                var mock = _persist2.default.insert(this.colName, doc, type);
+	                var mock = _persist2.default.insert.bind(this)(this.colName, doc, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
@@ -401,31 +461,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else {
 	                var inter;
 
-	                (function () {
+	                var _ret = function () {
 	                    // 请求次数
 	                    var num = _persist2.default.getRequestNum(_this3.colName);
 	                    var i = 1;
 
-	                    inter = setInterval(function () {
-	                        var _this4 = this;
+	                    var p = _persist2.default.insert.bind(_this3)(_this3.colName, doc, type).then(function (data) {
+	                        // 集合变更发布事件
+	                        _pubsubJs2.default.publish(_this3.pubsubKey, data.nowItems);
 
-	                        if (i == num) {
-	                            clearInterval(inter);
+	                        Collection.publishRelated(_this3.colName);
+	                    }.bind(_this3));
 
-	                            return _persist2.default.insert(this.colName, doc, type).then(function (data) {
-	                                // 集合变更发布事件
-	                                _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
-	                            }.bind(this));
-	                        }
+	                    if (num > 1) {
+	                        inter = setInterval(function () {
+	                            if (i == num - 1) {
+	                                clearInterval(inter);
+	                            }
 
-	                        _persist2.default.insert(this.colName, doc, type).then(function (data) {
-	                            // 集合变更发布事件
-	                            _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
-	                        }.bind(this));
+	                            _persist2.default.insert(this.colName, doc, type);
 
-	                        i++;
-	                    }.bind(_this3), 50);
-	                })();
+	                            i++;
+	                        }.bind(_this3), 50);
+	                    }
+
+	                    return {
+	                        v: p
+	                    };
+	                }();
+
+	                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 	            }
 	        }
 
@@ -439,19 +504,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'update',
 	        value: function update(doc, type) {
-	            var _this5 = this;
+	            var _this4 = this;
 
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'update');
 	            // 调用持久对象，更新单条数据
 	            if (_persist2.default.isMock) {
 	                // mock
-	                var mock = _persist2.default.update(this.colName, doc, type);
+	                var mock = _persist2.default.update.bind(this)(this.colName, doc, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
+	                            _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
 	                        }.bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
@@ -459,11 +524,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.update(this.colName, doc, type).then(function (data) {
+	                return _persist2.default.update.bind(this)(this.colName, doc, type).then(function (data) {
 	                    // 集合变更，发布事件
-	                    _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
-	                    // PubSub.publish(this.pubsubKey, data.nowItems);
-	                    // PubSub.publish(this.pubsubKey, data.nowItems);
+	                    _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
+
+	                    Collection.publishRelated(_this4.colName);
 	                }.bind(this));
 	            }
 	        }
@@ -478,19 +543,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'remove',
 	        value: function remove(doc, type) {
-	            var _this6 = this;
+	            var _this5 = this;
 
 	            // 清缓存
 	            Collection.clearCacheData(this.colName, 'remove');
 	            // 调用持久对象，更新单条数据
 	            if (_persist2.default.isMock) {
 	                // mock
-	                var mock = _persist2.default.remove(this.colName, doc, type);
+	                var mock = _persist2.default.remove.bind(this)(this.colName, doc, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
 	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this6.pubsubKey, data.nowItems);
+	                            _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
 	                        }.bind(this));
 	                    } else {
 	                        // 集合变更，发布事件
@@ -500,34 +565,62 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else {
 	                var inter;
 
-	                (function () {
+	                var _ret2 = function () {
 	                    // 请求次数
-	                    var num = _persist2.default.getRequestNum(_this6.colName);
+	                    var num = _persist2.default.getRequestNum(_this5.colName);
 	                    var i = 1;
 
-	                    inter = setInterval(function () {
-	                        var _this7 = this;
+	                    var p = _persist2.default.remove.bind(_this5)(_this5.colName, doc, type).then(function (data) {
+	                        // 集合变更，发布事件
+	                        _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
 
-	                        if (i == num) {
-	                            clearInterval(inter);
+	                        Collection.publishRelated(_this5.colName);
+	                    }.bind(_this5));
 
-	                            return _persist2.default.remove(this.colName, doc, type).then(function (data) {
-	                                // 集合变更，发布事件
-	                                _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
-	                            }.bind(this));
-	                        }
+	                    if (num > 1) {
+	                        inter = setInterval(function () {
+	                            if (i == num - 1) {
+	                                clearInterval(inter);
+	                            }
 
-	                        _persist2.default.remove(this.colName, doc, type).then(function (data) {
-	                            // 集合变更，发布事件
-	                            _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
-	                        }.bind(this));
+	                            _persist2.default.remove(this.colName, doc, type);
 
-	                        i++;
-	                    }.bind(_this6), 50);
-	                })();
+	                            i++;
+	                        }.bind(_this5), 50);
+	                    }
+
+	                    return {
+	                        v: p
+	                    };
+	                }();
+
+	                if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
 	            }
 	        }
 	    }], [{
+	        key: 'publishRelated',
+	        value: function publishRelated(colName) {
+	            var w = window.db && window.db[colName] && window.db[colName].widgets;
+	            var db = window.db && window.db[colName] && window.db[colName].items;
+
+	            for (var i = 0; i < w.length; i++) {
+	                var query = w[i].query;
+	                var match = _collectionUtils2.default.filterListKey(db, query);
+
+	                if (match) {
+	                    _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+	                }
+	            }
+	        }
+
+	        /**
+	         * [clearCacheData 清除缓存数据]
+	         * @param  {[type]} colName [集合名称]
+	         * @param  {[type]} p [操作]
+	         * @return {[type]}         [description]
+	         */
+
+	    }, {
 	        key: 'clearCacheData',
 	        value: function clearCacheData(colName, p) {
 	            // 获取过期时间
@@ -793,6 +886,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 
 	        /**
+	         * [getIsMongoQuery 是否禁用mongodb查询策略]
+	         * @param  {[type]} colName [集合名称]
+	         * @return {[type]}         [description]
+	         */
+
+	    }, {
+	        key: 'getIsMongoQuery',
+	        value: function getIsMongoQuery(colName) {
+	            // 获得集合相关配置
+	            var col = window.collectionConfig[colName];
+	            // 获得请求次数
+	            return col.isMongoQuery ? col.isMongoQuery : false;
+	        }
+
+	        /**
 	         * [getPrimaryKey 获得集合主键]
 	         * @param  {[type]} colName [集合名称]
 	         * @return {[type]}         [description]
@@ -970,14 +1078,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [findOne 查询集合某数据详情]
 	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} doc     [单条数据]
-	         * @param  {[type]} pubkey  [发布key]
 	         * @param  {[type]} type [url类型]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'findOne',
-	        value: function findOne(colName, doc, pubkey, type) {
+	        value: function findOne(colName, doc, type) {
+	            var _this = this;
+
 	            // 操作名称
 	            var p = 'findOne';
 
@@ -997,24 +1106,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            }
 
+	            // 是否禁用mongodb查询策略
+	            var mongo = Persist.getIsMongoQuery(colName);
 	            // 获取主键
 	            var key = Persist.getPrimaryKey(colName);
 	            // 获取主键值
 	            var param = Persist.getPrimaryKeyValue(colName, doc);
 
-	            var db = window.db && window.db[colName] && window.db[colName].items;
-	            // let parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
 	            if (db && db.size > 0) {
 	                db.forEach(function (val, i) {
 	                    if (val[key] == param) {
-	                        //目前模仿第一条数据，到时候parammock改为param
-	                        _pubsubJs2.default.publish(pubkey, (0, _immutable.Map)(val));
+	                        _pubsubJs2.default.publish(_this.pubsubKey, (0, _immutable.Map)(val));
 	                    }
 	                });
 	            }
 
+	            if (mongo) {
+	                var url = '/' + colName + '?query=' + doc;
+	            } else {
+	                var url = Persist.getUrl(colName, 'findOne', param, type);
+	            }
+
 	            // 执行ajax请求查询某集合数据详情    
-	            return $.get(Persist.getUrl(colName, 'findOne', param, type), null, function (data) {
+	            return $.get(url, null, function (data) {
 	                if (data.code === 'SUCCESS') {
 	                    Persist.setFindOneData(colName, p, data);
 	                }
@@ -1063,46 +1177,55 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        /**
 	         * [find 查询数据集合]
-	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} doc     [数据参数]
-	         * @param  {[type]} pubkey  [发布key]
+	         * @param  {[type]} query   [解析后的参数]
 	         * @param  {[type]} type    [url类型]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'find',
-	        value: function find(colName, doc, val, pubkey, type) {
+	        value: function find(doc, query, val, type) {
+	            var _this2 = this;
+
 	            // 操作名称
 	            var p = 'find';
 
 	            // 如果需要返回mock数据
 	            if (Persist.isMock) {
 	                // 生成相关mock数据
-	                var mock = Persist.mock(colName, p, doc);
+	                var mock = Persist.mock(this.colName, p, query);
 
 	                if (typeof mock === 'string') {
 	                    return $.getJSON(mock, null, function (data) {
 	                        // 返回相关操作数据
-	                        Persist.setFindData(colName, p, data);
+	                        Persist.setFindData(_this2.colName, p, data);
 	                    });
 	                } else {
 	                    // 返回相关操作数据
-	                    return Persist.setFindData(colName, p, mock);
+	                    return Persist.setFindData(this.colName, p, mock);
 	                }
 	            }
 
-	            var db = window.db && window.db[colName] && window.db[colName].items;
-	            var match = _collectionUtils2.default.filterListKey(db, doc);
+	            var db = window.db && window.db[this.colName] && window.db[this.colName].items;
+	            var match = _collectionUtils2.default.filterListKey(db, query);
 
 	            if (match) {
-	                _pubsubJs2.default.publish(pubkey, match);
+	                _pubsubJs2.default.publish(this.pubsubKey, match);
+	            }
+
+	            // 是否禁用mongodb查询策略
+	            var mongo = Persist.getIsMongoQuery(this.colName);
+	            if (mongo) {
+	                var url = '/' + this.colName + '?query=' + doc;
+	            } else {
+	                var url = Persist.getUrl(this.colName, p, val, type);
 	            }
 
 	            // 执行ajax请求查询某集合数据详情
-	            return $.get(Persist.getUrl(colName, p, val, type), doc, function (data) {
+	            return $.get(url, query, function (data) {
 	                if (data.code === 'SUCCESS') {
-	                    Persist.setFindData(colName, p, data);
+	                    Persist.setFindData(_this2.colName, p, data);
 	                }
 	            });
 	        }
@@ -1233,8 +1356,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (insert) {
 	                var one = $.extend({ "cacheTime": new Date().getTime() }, paramObj, _defineProperty({}, key, d[key]));
 
-	                var db = window.db && window.db[colName] && window.db[colName].items;
-	                if (db) {
+	                var _db = window.db && window.db[colName] && window.db[colName].items;
+	                if (_db) {
 	                    window.db[colName].items = window.db[colName].items.push(one);
 	                    window.localStorage.setItem('db', JSON.stringify(window.db));
 	                }

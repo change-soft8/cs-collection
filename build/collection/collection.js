@@ -45,10 +45,13 @@ var Collection = function () {
         this.colName = colName;
         // 初始化参数为集合
         this.items = _collectionUtils2.default.getList(list);
+        // 初始化组件
+        this.widgets = [];
     }
 
     /**
      * [bindWidget 绑定组件]
+     * @param  {[type]} id [组件Id]
      * @param  {Function} callback [集合变更，回调执行函数]
      * @return {[type]}            [description]
      */
@@ -60,7 +63,7 @@ var Collection = function () {
             // 组件
             var w = {};
             // 组件id
-            w._id = id;
+            w.id = id;
             w.colName = this.colName;
             w.pubsubKey = this.colName + '.' + id;
             // 组件方法
@@ -71,21 +74,23 @@ var Collection = function () {
             w.remove = this.remove.bind(w);
 
             // 订阅指定集合的事件
-            var pub = _pubsubJs2.default.subscribe(w.pubsubKey, callback);
+            w.pubsub = _pubsubJs2.default.subscribe(w.pubsubKey, callback);
 
             // 取消事件订阅
             w.unsubscribe = function () {
-                _pubsubJs2.default.unsubscribe(pub);
+                _pubsubJs2.default.unsubscribe(w.pubsub);
             };
+
+            // 存放组件
+            this.widgets.push({ widget: w });
 
             return w;
         }
 
         /**
-         * [clearCacheData 清除缓存数据]
+         * [publishRelated 发布关联事件]
          * @param  {[type]} colName [集合名称]
-         * @param  {[type]} p [操作]
-         * @return {[type]}         [description]
+         * @return {[type]}            [description]
          */
 
     }, {
@@ -102,13 +107,60 @@ var Collection = function () {
         value: function findOne(doc, type) {
             var _this = this;
 
+            // 初始化请求数据
+            var query = {};
+            // 不符合查询规则
+            if (doc && (typeof doc === 'undefined' ? 'undefined' : _typeof(doc)) == "object") {
+                // 如果传入数据为 object 类型
+                for (var key in doc) {
+                    var value = doc[key];
+                    if ((typeof value === 'undefined' ? 'undefined' : _typeof(value)) != "object") {
+                        // 等值搜索
+                        query[key] = value;
+                    } else {
+                        // 条件搜索
+                        for (var inKey in value) {
+                            // 查询器的值
+                            var inValue = value[inKey];
+                            if (inKey.indexOf("$") == 0) {
+                                // 搜索查询器
+                                var tag = inKey;
+
+                                // 按照 查询器 解析 查询条件
+                                try {
+                                    var v = _query2.default[tag](inValue);
+                                    if (v) {
+                                        query[key] = v;
+                                    } else {
+                                        return false;
+                                    }
+                                } catch (e) {
+                                    // 查询器暂不支持;
+                                    return false;
+                                }
+                            } else {
+                                // 条件搜搜的查询器不是以 $ 开头
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+
             // 清缓存
             Collection.clearCacheData(this.colName, 'findOne');
+
+            var w = db[this.colName].widgets;
+            for (var i = 0; i < w.length; i++) {
+                if (w[i].widget.id == this.id) {
+                    w[i].query = doc;
+                }
+            }
 
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.findOne(this.colName, doc, this.pubsubKey, type);
+                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
@@ -121,7 +173,7 @@ var Collection = function () {
                     }
                 }
             } else {
-                return _persist2.default.findOne(this.colName, doc, this.pubsubKey, type).then(function (data) {
+                return _persist2.default.findOne.bind(this)(this.colName, doc, type).then(function (data) {
                     // 集合变更发布事件
                     _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
                 }.bind(this));
@@ -131,6 +183,7 @@ var Collection = function () {
         /**
          * [find 根据查询器，查询集合]
          * @param  {[type]} doc   [查询器]
+         * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
          * @param  {[type]} type [url类型]
          * @return {[type]}       [description]
          */
@@ -183,10 +236,17 @@ var Collection = function () {
             // 清缓存
             Collection.clearCacheData(this.colName, 'find');
 
+            var w = db[this.colName].widgets;
+            for (var i = 0; i < w.length; i++) {
+                if (w[i].widget.id == this.id) {
+                    w[i].query = query;
+                }
+            }
+
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.find(this.colName, doc, val, this.pubsubKey, type);
+                var mock = _persist2.default.find.bind(this)(doc, query, val, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
@@ -204,7 +264,7 @@ var Collection = function () {
                 }
             } else {
                 // 调用持久化对象 查询 数据详情
-                return _persist2.default.find(this.colName, query, val, this.pubsubKey, type).then(function (data) {
+                return _persist2.default.find.bind(this)(doc, query, val, type).then(function (data) {
                     // 集合变更发布事件
                     _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
                 }.bind(this));
@@ -228,7 +288,7 @@ var Collection = function () {
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock
-                var mock = _persist2.default.insert(this.colName, doc, type);
+                var mock = _persist2.default.insert.bind(this)(this.colName, doc, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
@@ -243,31 +303,36 @@ var Collection = function () {
             } else {
                 var inter;
 
-                (function () {
+                var _ret = function () {
                     // 请求次数
                     var num = _persist2.default.getRequestNum(_this3.colName);
                     var i = 1;
 
-                    inter = setInterval(function () {
-                        var _this4 = this;
+                    var p = _persist2.default.insert.bind(_this3)(_this3.colName, doc, type).then(function (data) {
+                        // 集合变更发布事件
+                        _pubsubJs2.default.publish(_this3.pubsubKey, data.nowItems);
 
-                        if (i == num) {
-                            clearInterval(inter);
+                        Collection.publishRelated(_this3.colName);
+                    }.bind(_this3));
 
-                            return _persist2.default.insert(this.colName, doc, type).then(function (data) {
-                                // 集合变更发布事件
-                                _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
-                            }.bind(this));
-                        }
+                    if (num > 1) {
+                        inter = setInterval(function () {
+                            if (i == num - 1) {
+                                clearInterval(inter);
+                            }
 
-                        _persist2.default.insert(this.colName, doc, type).then(function (data) {
-                            // 集合变更发布事件
-                            _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
-                        }.bind(this));
+                            _persist2.default.insert(this.colName, doc, type);
 
-                        i++;
-                    }.bind(_this3), 50);
-                })();
+                            i++;
+                        }.bind(_this3), 50);
+                    }
+
+                    return {
+                        v: p
+                    };
+                }();
+
+                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
             }
         }
 
@@ -281,19 +346,19 @@ var Collection = function () {
     }, {
         key: 'update',
         value: function update(doc, type) {
-            var _this5 = this;
+            var _this4 = this;
 
             // 清缓存
             Collection.clearCacheData(this.colName, 'update');
             // 调用持久对象，更新单条数据
             if (_persist2.default.isMock) {
                 // mock
-                var mock = _persist2.default.update(this.colName, doc, type);
+                var mock = _persist2.default.update.bind(this)(this.colName, doc, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
+                            _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
@@ -301,11 +366,11 @@ var Collection = function () {
                     }
                 }
             } else {
-                return _persist2.default.update(this.colName, doc, type).then(function (data) {
+                return _persist2.default.update.bind(this)(this.colName, doc, type).then(function (data) {
                     // 集合变更，发布事件
-                    _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
-                    // PubSub.publish(this.pubsubKey, data.nowItems);
-                    // PubSub.publish(this.pubsubKey, data.nowItems);
+                    _pubsubJs2.default.publish(_this4.pubsubKey, data.nowItems);
+
+                    Collection.publishRelated(_this4.colName);
                 }.bind(this));
             }
         }
@@ -320,19 +385,19 @@ var Collection = function () {
     }, {
         key: 'remove',
         value: function remove(doc, type) {
-            var _this6 = this;
+            var _this5 = this;
 
             // 清缓存
             Collection.clearCacheData(this.colName, 'remove');
             // 调用持久对象，更新单条数据
             if (_persist2.default.isMock) {
                 // mock
-                var mock = _persist2.default.remove(this.colName, doc, type);
+                var mock = _persist2.default.remove.bind(this)(this.colName, doc, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
                             // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this6.pubsubKey, data.nowItems);
+                            _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
                         }.bind(this));
                     } else {
                         // 集合变更，发布事件
@@ -342,34 +407,62 @@ var Collection = function () {
             } else {
                 var inter;
 
-                (function () {
+                var _ret2 = function () {
                     // 请求次数
-                    var num = _persist2.default.getRequestNum(_this6.colName);
+                    var num = _persist2.default.getRequestNum(_this5.colName);
                     var i = 1;
 
-                    inter = setInterval(function () {
-                        var _this7 = this;
+                    var p = _persist2.default.remove.bind(_this5)(_this5.colName, doc, type).then(function (data) {
+                        // 集合变更，发布事件
+                        _pubsubJs2.default.publish(_this5.pubsubKey, data.nowItems);
 
-                        if (i == num) {
-                            clearInterval(inter);
+                        Collection.publishRelated(_this5.colName);
+                    }.bind(_this5));
 
-                            return _persist2.default.remove(this.colName, doc, type).then(function (data) {
-                                // 集合变更，发布事件
-                                _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
-                            }.bind(this));
-                        }
+                    if (num > 1) {
+                        inter = setInterval(function () {
+                            if (i == num - 1) {
+                                clearInterval(inter);
+                            }
 
-                        _persist2.default.remove(this.colName, doc, type).then(function (data) {
-                            // 集合变更，发布事件
-                            _pubsubJs2.default.publish(_this7.pubsubKey, data.nowItems);
-                        }.bind(this));
+                            _persist2.default.remove(this.colName, doc, type);
 
-                        i++;
-                    }.bind(_this6), 50);
-                })();
+                            i++;
+                        }.bind(_this5), 50);
+                    }
+
+                    return {
+                        v: p
+                    };
+                }();
+
+                if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
             }
         }
     }], [{
+        key: 'publishRelated',
+        value: function publishRelated(colName) {
+            var w = window.db && window.db[colName] && window.db[colName].widgets;
+            var db = window.db && window.db[colName] && window.db[colName].items;
+
+            for (var i = 0; i < w.length; i++) {
+                var query = w[i].query;
+                var match = _collectionUtils2.default.filterListKey(db, query);
+
+                if (match) {
+                    _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+                }
+            }
+        }
+
+        /**
+         * [clearCacheData 清除缓存数据]
+         * @param  {[type]} colName [集合名称]
+         * @param  {[type]} p [操作]
+         * @return {[type]}         [description]
+         */
+
+    }, {
         key: 'clearCacheData',
         value: function clearCacheData(colName, p) {
             // 获取过期时间

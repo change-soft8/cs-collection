@@ -219,6 +219,21 @@ var Persist = function () {
         }
 
         /**
+         * [getIsMongoQuery 是否禁用mongodb查询策略]
+         * @param  {[type]} colName [集合名称]
+         * @return {[type]}         [description]
+         */
+
+    }, {
+        key: 'getIsMongoQuery',
+        value: function getIsMongoQuery(colName) {
+            // 获得集合相关配置
+            var col = window.collectionConfig[colName];
+            // 获得请求次数
+            return col.isMongoQuery ? col.isMongoQuery : false;
+        }
+
+        /**
          * [getPrimaryKey 获得集合主键]
          * @param  {[type]} colName [集合名称]
          * @return {[type]}         [description]
@@ -396,14 +411,15 @@ var Persist = function () {
          * [findOne 查询集合某数据详情]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc     [单条数据]
-         * @param  {[type]} pubkey  [发布key]
          * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'findOne',
-        value: function findOne(colName, doc, pubkey, type) {
+        value: function findOne(colName, doc, type) {
+            var _this = this;
+
             // 操作名称
             var p = 'findOne';
 
@@ -423,24 +439,29 @@ var Persist = function () {
                 }
             }
 
+            // 是否禁用mongodb查询策略
+            var mongo = Persist.getIsMongoQuery(colName);
             // 获取主键
             var key = Persist.getPrimaryKey(colName);
             // 获取主键值
             var param = Persist.getPrimaryKeyValue(colName, doc);
 
-            var db = window.db && window.db[colName] && window.db[colName].items;
-            // let parammock = db.first() && db.first().projectId; //目前模仿第一条数据，到时删除此行
             if (db && db.size > 0) {
                 db.forEach(function (val, i) {
                     if (val[key] == param) {
-                        //目前模仿第一条数据，到时候parammock改为param
-                        _pubsubJs2.default.publish(pubkey, (0, _immutable.Map)(val));
+                        _pubsubJs2.default.publish(_this.pubsubKey, (0, _immutable.Map)(val));
                     }
                 });
             }
 
+            if (mongo) {
+                var url = '/' + colName + '?query=' + doc;
+            } else {
+                var url = Persist.getUrl(colName, 'findOne', param, type);
+            }
+
             // 执行ajax请求查询某集合数据详情    
-            return $.get(Persist.getUrl(colName, 'findOne', param, type), null, function (data) {
+            return $.get(url, null, function (data) {
                 if (data.code === 'SUCCESS') {
                     Persist.setFindOneData(colName, p, data);
                 }
@@ -489,46 +510,55 @@ var Persist = function () {
 
         /**
          * [find 查询数据集合]
-         * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc     [数据参数]
-         * @param  {[type]} pubkey  [发布key]
+         * @param  {[type]} query   [解析后的参数]
          * @param  {[type]} type    [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'find',
-        value: function find(colName, doc, val, pubkey, type) {
+        value: function find(doc, query, val, type) {
+            var _this2 = this;
+
             // 操作名称
             var p = 'find';
 
             // 如果需要返回mock数据
             if (Persist.isMock) {
                 // 生成相关mock数据
-                var mock = Persist.mock(colName, p, doc);
+                var mock = Persist.mock(this.colName, p, query);
 
                 if (typeof mock === 'string') {
                     return $.getJSON(mock, null, function (data) {
                         // 返回相关操作数据
-                        Persist.setFindData(colName, p, data);
+                        Persist.setFindData(_this2.colName, p, data);
                     });
                 } else {
                     // 返回相关操作数据
-                    return Persist.setFindData(colName, p, mock);
+                    return Persist.setFindData(this.colName, p, mock);
                 }
             }
 
-            var db = window.db && window.db[colName] && window.db[colName].items;
-            var match = _collectionUtils2.default.filterListKey(db, doc);
+            var db = window.db && window.db[this.colName] && window.db[this.colName].items;
+            var match = _collectionUtils2.default.filterListKey(db, query);
 
             if (match) {
-                _pubsubJs2.default.publish(pubkey, match);
+                _pubsubJs2.default.publish(this.pubsubKey, match);
+            }
+
+            // 是否禁用mongodb查询策略
+            var mongo = Persist.getIsMongoQuery(this.colName);
+            if (mongo) {
+                var url = '/' + this.colName + '?query=' + doc;
+            } else {
+                var url = Persist.getUrl(this.colName, p, val, type);
             }
 
             // 执行ajax请求查询某集合数据详情
-            return $.get(Persist.getUrl(colName, p, val, type), doc, function (data) {
+            return $.get(url, query, function (data) {
                 if (data.code === 'SUCCESS') {
-                    Persist.setFindData(colName, p, data);
+                    Persist.setFindData(_this2.colName, p, data);
                 }
             });
         }
@@ -659,8 +689,8 @@ var Persist = function () {
             if (insert) {
                 var one = $.extend({ "cacheTime": new Date().getTime() }, paramObj, _defineProperty({}, key, d[key]));
 
-                var db = window.db && window.db[colName] && window.db[colName].items;
-                if (db) {
+                var _db = window.db && window.db[colName] && window.db[colName].items;
+                if (_db) {
                     window.db[colName].items = window.db[colName].items.push(one);
                     window.localStorage.setItem('db', JSON.stringify(window.db));
                 }
