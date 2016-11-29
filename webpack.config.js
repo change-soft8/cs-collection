@@ -17,6 +17,7 @@ module.exports = {
     },
     externals: {
         'immutable': 'Immutable',
-        'pubsub-js': 'PubSub'
+        'pubsub-js': 'PubSub',
+        'datajs': 'Datejs'
     }
 }

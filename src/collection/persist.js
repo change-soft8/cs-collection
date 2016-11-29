@@ -16,19 +16,13 @@ export default class Persist {
         });
 
         // 发送ajax拦截方法
-        $(document).ajaxSend(function(evt, request, settings) {
-
-        });
+        $(document).ajaxSend(function(evt, request, settings) {});
 
         // ajax请求成功, 拦截后台操作错误的提示消息
-        $(document).ajaxSuccess(function(event, xhr, settings) {
-
-        });
+        $(document).ajaxSuccess(function(event, xhr, settings) {});
 
         // ajax请求失败, 提示网络请求错误消息
-        $(document).ajaxError(function(event, xhr, settings, exception) {
-
-        });
+        $(document).ajaxError(function(event, xhr, settings, exception) {});
 
         // 扩展jquery ajax支持put delete方法.
         jQuery.each(["put", "delete"], function(i, method) {
@@ -83,7 +77,7 @@ export default class Persist {
         let url = op && op.mockUrl || '';
 
         return url;
-    };
+    }
 
     /**
      * [getStoreParam 获取mock存放字段]
@@ -100,7 +94,24 @@ export default class Persist {
         let sp = op && op.storeParam || 'entity';
 
         return sp;
-    };
+    }
+
+    /**
+     * [getFields 获取fields配置]
+     * @param  {[type]} colName [集合名称]
+     * @param  {[type]} oper    [操作名称]
+     * @return {[type]}         [description]
+     */
+    static getFields(colName, oper) {
+        // 获得集合相关配置
+        let col = window.collectionConfig[colName];
+        // 获得集合操作相关配置
+        let op = col && col[oper];
+        // 获取集合fields配置
+        let fields = col && col.entity && col.entity.fields;
+
+        return fields;
+    }
 
     /**
      * [mock 根据集合名称、操作、参数，生产mock数据]
@@ -116,14 +127,19 @@ export default class Persist {
         let op = col && col[oper];
         // 获得集合操作返回值相关配置
         let ret = op && op.return;
-        // 获取集合fields配置
-        let mockFields = col && col.entity && col.entity.fields;
         // 获得集合操作mock结构
-        let mockStr = op && op.structure || { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": '' };
+        let mockStr = op && op.structure || {
+            "millis": 32,
+            "code": "SUCCESS",
+            "message": "操作成功",
+            "entity": ''
+        };
         // 获得集合操作mock结构数据存放字段
         let sp = Persist.getStoreParam(colName, oper);
         // 获取集合主键
         let key = Persist.getPrimaryKey(colName);
+        // 获取集合fields配置
+        let mockFields = Persist.getFields(colName, oper);
 
         // 如果没有return参数、return为null或者return为空对象
         if (!ret || $.isEmptyObject(ret)) {
@@ -132,11 +148,11 @@ export default class Persist {
             // 返回url地址的JSON数据或者默认JSON数据
             return url ? url : window.collectionMock;
 
-            // 只要求返回主键情况
+        // 只要求返回主键情况
         } else if (ret.hasOwnProperty(key) && Persist.getObjLength(ret) == 1) {
             // 随机生产一个唯一标识
             return MockUtils.mockUUID(ret, mockStr, sp);
-            // 根据return返回数据（有return和fileds一般为查询接口）
+        // 根据return返回数据（有return和fileds一般为查询接口）
         } else if (ret && mockFields) {
             // 生成的对象
             let obj = MockUtils.createMockContent(ret, mockFields);
@@ -278,7 +294,7 @@ export default class Persist {
         // 获取主键值
         let val = '';
 
-        if (typeof(doc) == 'string') {
+        if (typeof (doc) == 'string') {
             val = doc;
         } else {
             // 获取主键
@@ -351,7 +367,7 @@ export default class Persist {
 
         if (db && db.size > 0) {
             db.forEach((val, i) => {
-                if (val[key] == data[key]) {
+                if (val[key] == (typeof data == 'string' ? data : data[key])) {
                     insert = false;
 
                     if (p == 'findOne') {
@@ -363,7 +379,11 @@ export default class Persist {
         }
 
         if (p == 'findOne') {
-            return $.extend({ 'isInsert': insert }, { 'extend': extend });
+            return $.extend({
+                'isInsert': insert
+            }, {
+                'extend': extend
+            });
         }
 
         return insert;
@@ -390,6 +410,69 @@ export default class Persist {
     }
 
     /**
+     * [getTimeKey 需要进行时间转换的数据]
+     * @param  {[type]} colName [集合名称]
+     * @param  {[type]} oper [集合操作]
+     * @return {[type]} [description]
+     */
+    static getTimeKey(colName, oper) {
+        // 获取集合fields配置
+        let fs = Persist.getFields(colName, oper);
+        let keys = [];
+
+        for (var i in fs) {
+            if (Utils.isObject(fs[i])) {
+                if (fs[i].type === 'time') {
+                    keys.push(i);
+                }
+            } else if (fs[i] === 'time') {
+                keys.push(i);
+            }
+        }
+
+        return keys;
+    }
+
+    /**
+     * [forKeyData 遍历数据key]
+     * @param  {[type]} data [数据]
+     * @param  {[type]} keys [时间keys]
+     * @param  {[type]} fs [key配置]
+     * @return {[type]} [description]
+     */
+    static forKeyData(data, keys, fs) {
+        for (var i in data) {
+            if (Utils.isObject(data[i])) {
+                Persist.forKeyData(data[i], keys, fs);
+            } else {
+                for (var j in keys) {
+                    if (i === keys[j]) {
+                        data[i] = new Date(data[i]).toString(fs[i].format ? fs[i].format : 'yyyy-MM-dd');
+                    }
+                }
+            }
+        }
+
+        return data;
+    }
+
+    /**
+     * [getTimeData 对数据进行时间转换]
+     * @param  {[type]} colName [集合名称]
+     * @param  {[type]} oper [集合操作]
+     * @param  {[type]} data [数据]
+     * @return {[type]} [description]
+     */
+    static getTimeData(colName, oper, data) {
+        // 获取集合fields配置
+        let fs = Persist.getFields(colName, oper);
+        // 获取需要进行时间转换的key列表
+        let keys = Persist.getTimeKey(colName, oper);
+
+        return Persist.forKeyData(data, keys, fs);
+    }
+
+    /**
      * [findOne 查询集合某数据详情]
      * @param  {[type]} colName [集合名称]
      * @param  {[type]} doc     [单条数据]
@@ -405,7 +488,7 @@ export default class Persist {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
-            if (typeof(mock) === 'string') {
+            if (typeof (mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
                     Persist.setFindOneData(colName, p, data);
@@ -440,6 +523,7 @@ export default class Persist {
         // 执行ajax请求查询某集合数据详情    
         return $.get(url, null, (data) => {
             if (data.code === 'SUCCESS') {
+                data = Persist.getTimeData(colName, p, data);
                 Persist.setFindOneData(colName, p, data);
             }
         });
@@ -498,7 +582,7 @@ export default class Persist {
             // 生成相关mock数据
             let mock = Persist.mock(this.colName, p, query);
 
-            if (typeof(mock) === 'string') {
+            if (typeof (mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
                     Persist.setFindData(this.colName, p, data);
@@ -527,6 +611,7 @@ export default class Persist {
         // 执行ajax请求查询某集合数据详情
         return $.get(url, query, (data) => {
             if (data.code === 'SUCCESS') {
+                data = Persist.getTimeData(this.colName, p, data);
                 Persist.setFindData(this.colName, p, data);
             }
         });
@@ -611,7 +696,7 @@ export default class Persist {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
-            if (typeof(mock) === 'string') {
+            if (typeof (mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
                     Persist.setInsertData(colName, p, data, paramObj);
@@ -625,6 +710,7 @@ export default class Persist {
         // 执行ajax请求查询某集合数据详情
         return $.post(Persist.getUrl(colName, p, doc, type), paramObj, (data) => {
             if (data.code === 'SUCCESS') {
+                data = Persist.getTimeData(colName, p, data);
                 Persist.setInsertData(colName, p, data, paramObj);
             }
         });
@@ -647,8 +733,10 @@ export default class Persist {
         let insert = Persist.isInsert(colName, p, d, key);
 
         if (insert) {
-            let one = $.extend({ "cacheTime": new Date().getTime() }, paramObj, {
-                [key]: d[key]
+            let one = $.extend({
+                "cacheTime": new Date().getTime()
+            }, paramObj, {
+                [key]: typeof d == 'string' ? d : d[key]
             });
 
             let db = window.db && window.db[colName] && window.db[colName].items;
@@ -679,7 +767,7 @@ export default class Persist {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
-            if (typeof(mock) === 'string') {
+            if (typeof (mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
                     Persist.setUpdateData(colName, p, data, doc);
@@ -699,6 +787,7 @@ export default class Persist {
         // 执行ajax请求查询某集合数据详情
         return $.put(Persist.getUrl(colName, p, param, type), paramObj, (data) => {
             if (data.code === 'SUCCESS') {
+                data = Persist.getTimeData(colName, p, data);
                 Persist.setUpdateData(colName, p, data, doc);
             }
         });
@@ -747,7 +836,7 @@ export default class Persist {
             // 生成相关mock数据
             let mock = Persist.mock(colName, p, doc);
 
-            if (typeof(mock) === 'string') {
+            if (typeof (mock) === 'string') {
                 return $.getJSON(mock, null, (data) => {
                     // 返回相关操作数据
                     data.nowItems = Map(Utils.removeData(colName, param, key));
@@ -762,6 +851,7 @@ export default class Persist {
         // 执行ajax请求查询某集合数据详情
         return $.delete(Persist.getUrl(colName, p, param, type), null, (data) => {
             if (data.code === 'SUCCESS') {
+                data = Persist.getTimeData(colName, p, data);
                 data.nowItems = Map(Utils.removeData(colName, param, key));
             }
         });

@@ -58,18 +58,18 @@ var Persist = function () {
             return url;
         }
 
-        // 是否需要mock数据
-
-    }, {
-        key: 'getStoreParam',
-
-
         /**
          * [getStoreParam 获取mock存放字段]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} oper    [操作名称]
          * @return {[type]}         [description]
          */
+
+
+        // 是否需要mock数据
+
+    }, {
+        key: 'getStoreParam',
         value: function getStoreParam(colName, oper) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
@@ -80,9 +80,26 @@ var Persist = function () {
 
             return sp;
         }
-    }, {
-        key: 'mock',
 
+        /**
+         * [getFields 获取fields配置]
+         * @param  {[type]} colName [集合名称]
+         * @param  {[type]} oper    [操作名称]
+         * @return {[type]}         [description]
+         */
+
+    }, {
+        key: 'getFields',
+        value: function getFields(colName, oper) {
+            // 获得集合相关配置
+            var col = window.collectionConfig[colName];
+            // 获得集合操作相关配置
+            var op = col && col[oper];
+            // 获取集合fields配置
+            var fields = col && col.entity && col.entity.fields;
+
+            return fields;
+        }
 
         /**
          * [mock 根据集合名称、操作、参数，生产mock数据]
@@ -91,6 +108,9 @@ var Persist = function () {
          * @param  {[type]} doc     [操作参数]
          * @return {[type]}         [description]
          */
+
+    }, {
+        key: 'mock',
         value: function mock(colName, oper, doc) {
             // 获得集合相关配置
             var col = window.collectionConfig[colName];
@@ -98,14 +118,19 @@ var Persist = function () {
             var op = col && col[oper];
             // 获得集合操作返回值相关配置
             var ret = op && op.return;
-            // 获取集合fields配置
-            var mockFields = col && col.entity && col.entity.fields;
             // 获得集合操作mock结构
-            var mockStr = op && op.structure || { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": '' };
+            var mockStr = op && op.structure || {
+                "millis": 32,
+                "code": "SUCCESS",
+                "message": "操作成功",
+                "entity": ''
+            };
             // 获得集合操作mock结构数据存放字段
             var sp = Persist.getStoreParam(colName, oper);
             // 获取集合主键
             var key = Persist.getPrimaryKey(colName);
+            // 获取集合fields配置
+            var mockFields = Persist.getFields(colName, oper);
 
             // 如果没有return参数、return为null或者return为空对象
             if (!ret || $.isEmptyObject(ret)) {
@@ -366,7 +391,7 @@ var Persist = function () {
 
             if (db && db.size > 0) {
                 db.forEach(function (val, i) {
-                    if (val[key] == data[key]) {
+                    if (val[key] == (typeof data == 'string' ? data : data[key])) {
                         insert = false;
 
                         if (p == 'findOne') {
@@ -378,7 +403,11 @@ var Persist = function () {
             }
 
             if (p == 'findOne') {
-                return $.extend({ 'isInsert': insert }, { 'extend': extend });
+                return $.extend({
+                    'isInsert': insert
+                }, {
+                    'extend': extend
+                });
             }
 
             return insert;
@@ -405,6 +434,78 @@ var Persist = function () {
                 // 返回用户输入参数
                 return ['', false];
             }
+        }
+
+        /**
+         * [getTimeKey 需要进行时间转换的数据]
+         * @param  {[type]} colName [集合名称]
+         * @param  {[type]} oper [集合操作]
+         * @return {[type]} [description]
+         */
+
+    }, {
+        key: 'getTimeKey',
+        value: function getTimeKey(colName, oper) {
+            // 获取集合fields配置
+            var fs = Persist.getFields(colName, oper);
+            var keys = [];
+
+            for (var i in fs) {
+                if (_collectionUtils2.default.isObject(fs[i])) {
+                    if (fs[i].type === 'time') {
+                        keys.push(i);
+                    }
+                } else if (fs[i] === 'time') {
+                    keys.push(i);
+                }
+            }
+
+            return keys;
+        }
+
+        /**
+         * [forKeyData 遍历数据key]
+         * @param  {[type]} data [数据]
+         * @param  {[type]} keys [时间keys]
+         * @param  {[type]} fs [key配置]
+         * @return {[type]} [description]
+         */
+
+    }, {
+        key: 'forKeyData',
+        value: function forKeyData(data, keys, fs) {
+            for (var i in data) {
+                if (_collectionUtils2.default.isObject(data[i])) {
+                    Persist.forKeyData(data[i], keys, fs);
+                } else {
+                    for (var j in keys) {
+                        if (i === keys[j]) {
+                            data[i] = new Date(data[i]).toString(fs[i].format ? fs[i].format : 'yyyy-MM-dd');
+                        }
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        /**
+         * [getTimeData 对数据进行时间转换]
+         * @param  {[type]} colName [集合名称]
+         * @param  {[type]} oper [集合操作]
+         * @param  {[type]} data [数据]
+         * @return {[type]} [description]
+         */
+
+    }, {
+        key: 'getTimeData',
+        value: function getTimeData(colName, oper, data) {
+            // 获取集合fields配置
+            var fs = Persist.getFields(colName, oper);
+            // 获取需要进行时间转换的key列表
+            var keys = Persist.getTimeKey(colName, oper);
+
+            return Persist.forKeyData(data, keys, fs);
         }
 
         /**
@@ -463,6 +564,7 @@ var Persist = function () {
             // 执行ajax请求查询某集合数据详情    
             return $.get(url, null, function (data) {
                 if (data.code === 'SUCCESS') {
+                    data = Persist.getTimeData(colName, p, data);
                     Persist.setFindOneData(colName, p, data);
                 }
             });
@@ -558,6 +660,7 @@ var Persist = function () {
             // 执行ajax请求查询某集合数据详情
             return $.get(url, query, function (data) {
                 if (data.code === 'SUCCESS') {
+                    data = Persist.getTimeData(_this2.colName, p, data);
                     Persist.setFindData(_this2.colName, p, data);
                 }
             });
@@ -662,6 +765,7 @@ var Persist = function () {
             // 执行ajax请求查询某集合数据详情
             return $.post(Persist.getUrl(colName, p, doc, type), paramObj, function (data) {
                 if (data.code === 'SUCCESS') {
+                    data = Persist.getTimeData(colName, p, data);
                     Persist.setInsertData(colName, p, data, paramObj);
                 }
             });
@@ -687,7 +791,9 @@ var Persist = function () {
             var insert = Persist.isInsert(colName, p, d, key);
 
             if (insert) {
-                var one = $.extend({ "cacheTime": new Date().getTime() }, paramObj, _defineProperty({}, key, d[key]));
+                var one = $.extend({
+                    "cacheTime": new Date().getTime()
+                }, paramObj, _defineProperty({}, key, typeof d == 'string' ? d : d[key]));
 
                 var _db = window.db && window.db[colName] && window.db[colName].items;
                 if (_db) {
@@ -740,6 +846,7 @@ var Persist = function () {
             // 执行ajax请求查询某集合数据详情
             return $.put(Persist.getUrl(colName, p, param, type), paramObj, function (data) {
                 if (data.code === 'SUCCESS') {
+                    data = Persist.getTimeData(colName, p, data);
                     Persist.setUpdateData(colName, p, data, doc);
                 }
             });
@@ -809,6 +916,7 @@ var Persist = function () {
             // 执行ajax请求查询某集合数据详情
             return $.delete(Persist.getUrl(colName, p, param, type), null, function (data) {
                 if (data.code === 'SUCCESS') {
+                    data = Persist.getTimeData(colName, p, data);
                     data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
                 }
             });

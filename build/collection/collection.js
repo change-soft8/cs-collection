@@ -82,7 +82,9 @@ var Collection = function () {
             };
 
             // 存放组件
-            this.widgets.push({ widget: w });
+            this.widgets.push({
+                widget: w
+            });
 
             return w;
         }
@@ -446,11 +448,18 @@ var Collection = function () {
             var db = window.db && window.db[colName] && window.db[colName].items;
 
             for (var i = 0; i < w.length; i++) {
-                var query = w[i].query;
-                var match = _collectionUtils2.default.filterListKey(db, query);
+                if (w[i].hasOwnProperty("query")) {
+                    var query = w[i].query;
 
-                if (match) {
-                    _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+                    if (_collectionUtils2.default.isEmpty(query)) {
+                        _pubsubJs2.default.publish(w[i].widget.pubsubKey, db);
+                    } else {
+                        var match = _collectionUtils2.default.filterListKey(db, query);
+
+                        if (match) {
+                            _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+                        }
+                    }
                 }
             }
         }

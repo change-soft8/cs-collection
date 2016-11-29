@@ -10,7 +10,7 @@ npm install cs-collection
 
 
 依赖插件
-jquery，immutable，pubsub-js
+jquery，immutable，pubsub-js，datajs
 可直接引用cdn
 
 ##### 使用
@@ -167,7 +167,8 @@ export default {
             "字段2": ["图片1", "图片2"], // 此字段自动生成的mock数据是从数组中随机拿的元素
             "字段3": "int", // 此字段自动生成的mock数据是数字类型
             "字段4": "time", // 此字段自动生成的mock数据是时间戳
-            "字段5": "money" // 此字段自动生成的mock数据是金额（例如99.00）
+            "字段5": {"type": "time", "format": "yyyy-MM-dd"}, // 此字段自动生成的mock数据是时间戳
+            "字段6": "money" // 此字段自动生成的mock数据是金额（例如99.00）
         }
     }
 }

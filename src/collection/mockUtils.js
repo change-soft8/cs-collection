@@ -1,3 +1,4 @@
+import Utils from './collection-utils';
 import Mock from '../config/mock.conf.js';
 
 export default class MockUtils {
@@ -55,7 +56,7 @@ export default class MockUtils {
      * @return {[type]}   [description]
      */
     static mockUUID(obj, mockStr, sp) {
-        if (typeof(obj) === 'object') {
+        if (typeof (obj) === 'object') {
             // 获取需要uuid的主键
             let key = MockUtils.getKeyItems(obj)[0];
             // 获取主键长度
@@ -80,55 +81,58 @@ export default class MockUtils {
         // 赋值操作返回对象
         let obj = JSON.parse(JSON.stringify(ret));
         // 如果返回配置是对象
-        if (typeof(obj) === 'object') {
-            // 获取操作返回key数组
-            let attrArr = MockUtils.getKeyItems(obj);
+        if (typeof (obj) === 'object') {
             // 长度级别数组
             let levelArr = Mock[MockUtils.mockLevel] || Mock[MockUtils.level_1];
 
-            // 遍历
-            attrArr.forEach((key, i) => {
-                // 如果字段是数组
-                if ($.isArray(obj[key])) {
-                    // 返回数组
-                    let valArr = [];
-                    // 数组随机长度
-                    let len = MockUtils.getRandomlength(levelArr.array);
+            MockUtils.getMockData(obj, levelArr, fields);
 
-                    if (typeof(obj[key][0]) === 'object') {
-                        // 遍历
-                        for (var n = 0; n < len; n++) {
-                            // 初始对象
-                            let temp = {};
-                            // 遍历
-                            for (var m in obj[key][0]) {
-                                // 数组内对象
-                                temp = $.extend(temp, {
-                                    [m]: MockUtils.getItemValue(fields[m], levelArr)
-                                });
+            return obj;
+        }
+    }
 
-                            }
-                            // 返回数组赋值
-                            valArr.push(temp);
-                        }
-                    } else {
-                        // 遍历
-                        for (var n = 0; n < len; n++) {
-                            // 返回数组赋值
-                            valArr.push(MockUtils.getItemValue(obj[key][0], levelArr));
-                        }
+    /**
+     * [getMockData 遍历生产mock]
+     * @param  {[type]} obj [数据]
+     * @param  {[type]} levelArr [长度]
+     * @param  {[type]} fields [key配置]
+     * @return {[type]} [description]
+     */
+    static getMockData(obj, levelArr, fields) {
+        // 获取操作返回key数组
+        let attrArr = MockUtils.getKeyItems(obj);
+
+        attrArr.forEach((key, i) => {
+            // 如果字段是数组
+            if ($.isArray(obj[key])) {
+                // 返回数组
+                var valArr = [];
+                // 数组随机长度
+                let len = MockUtils.getRandomlength(levelArr.array);
+
+                if (typeof obj[key][0] !== 'object') {
+                    // 遍历
+                    for (var n = 0; n < len; n++) {
+                        // 返回数组赋值
+                        valArr.push(MockUtils.getItemValue(obj[key][0], levelArr));
+                    }
+
+                } else {
+                    for (var m = 0; m < len; m++) {
+                        let arr = JSON.parse(JSON.stringify(MockUtils.getMockData(obj[key][0], levelArr, fields)));
+                        valArr[m] = arr;
                     }
 
                     // 赋值给字段
                     obj[key] = valArr;
-                } else {
-                    // 其他情况字段赋值
-                    obj[key] = MockUtils.getItemValue(fields[key], levelArr);
                 }
-            });
+            } else {
+                // 其他情况字段赋值
+                obj[key] = MockUtils.getItemValue(fields[key], levelArr);
+            }
+        });
 
-            return obj;
-        }
+        return obj;
     }
 
     /**
@@ -155,7 +159,12 @@ export default class MockUtils {
             value = parseFloat(integer / 100).toFixed(2);
         } else if (type === 'time') {
             // 时间戳
-            value = new Date().getTime();
+            value = new Date().toString('yyyy-MM-dd');
+        } else if (Utils.isObject(type)) {
+            // 时间戳
+            if (type.type === 'time') {
+                value = new Date().toString(type.format);
+            }
         } else if ($.isArray(type)) {
             let k = Math.floor(Math.random() * type.length);
             value = type[k];
@@ -187,13 +196,13 @@ export default class MockUtils {
      */
     static getRandomString(len, chars) {
         // 随机数长度
-        let maxPos = chars.length;　　
+        let maxPos = chars.length;
 
         // 字符串
-        let str = '';　
+        let str = '';
         for (let i = 0; i < len; i++) {
             // 产生随机数　
-            str += chars.charAt(Math.floor(Math.random() * maxPos));　
+            str += chars.charAt(Math.floor(Math.random() * maxPos));
         }
 
         // 返回随机生成的字符串

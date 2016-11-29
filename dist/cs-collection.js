@@ -7,7 +7,7 @@
 		exports["CsCollection"] = factory(require("Immutable"), require("PubSub"));
 	else
 		root["CsCollection"] = factory(root["Immutable"], root["PubSub"]);
-})(this, function(__WEBPACK_EXTERNAL_MODULE_6__, __WEBPACK_EXTERNAL_MODULE_8__) {
+})(this, function(__WEBPACK_EXTERNAL_MODULE_5__, __WEBPACK_EXTERNAL_MODULE_8__) {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -170,7 +170,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _persist2 = _interopRequireDefault(_persist);
 
-	var _collectionUtils = __webpack_require__(5);
+	var _collectionUtils = __webpack_require__(4);
 
 	var _collectionUtils2 = _interopRequireDefault(_collectionUtils);
 
@@ -240,7 +240,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            };
 
 	            // 存放组件
-	            this.widgets.push({ widget: w });
+	            this.widgets.push({
+	                widget: w
+	            });
 
 	            return w;
 	        }
@@ -604,11 +606,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var db = window.db && window.db[colName] && window.db[colName].items;
 
 	            for (var i = 0; i < w.length; i++) {
-	                var query = w[i].query;
-	                var match = _collectionUtils2.default.filterListKey(db, query);
+	                if (w[i].hasOwnProperty("query")) {
+	                    var query = w[i].query;
 
-	                if (match) {
-	                    _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+	                    if (_collectionUtils2.default.isEmpty(query)) {
+	                        _pubsubJs2.default.publish(w[i].widget.pubsubKey, db);
+	                    } else {
+	                        var match = _collectionUtils2.default.filterListKey(db, query);
+
+	                        if (match) {
+	                            _pubsubJs2.default.publish(w[i].widget.pubsubKey, match);
+	                        }
+	                    }
 	                }
 	            }
 	        }
@@ -677,11 +686,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _mockUtils2 = _interopRequireDefault(_mockUtils);
 
-	var _collectionUtils = __webpack_require__(5);
+	var _collectionUtils = __webpack_require__(4);
 
 	var _collectionUtils2 = _interopRequireDefault(_collectionUtils);
 
-	var _immutable = __webpack_require__(6);
+	var _immutable = __webpack_require__(5);
 
 	var _pubsubJs = __webpack_require__(8);
 
@@ -725,18 +734,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return url;
 	        }
 
-	        // 是否需要mock数据
-
-	    }, {
-	        key: 'getStoreParam',
-
-
 	        /**
 	         * [getStoreParam 获取mock存放字段]
 	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} oper    [操作名称]
 	         * @return {[type]}         [description]
 	         */
+
+
+	        // 是否需要mock数据
+
+	    }, {
+	        key: 'getStoreParam',
 	        value: function getStoreParam(colName, oper) {
 	            // 获得集合相关配置
 	            var col = window.collectionConfig[colName];
@@ -747,9 +756,26 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            return sp;
 	        }
-	    }, {
-	        key: 'mock',
 
+	        /**
+	         * [getFields 获取fields配置]
+	         * @param  {[type]} colName [集合名称]
+	         * @param  {[type]} oper    [操作名称]
+	         * @return {[type]}         [description]
+	         */
+
+	    }, {
+	        key: 'getFields',
+	        value: function getFields(colName, oper) {
+	            // 获得集合相关配置
+	            var col = window.collectionConfig[colName];
+	            // 获得集合操作相关配置
+	            var op = col && col[oper];
+	            // 获取集合fields配置
+	            var fields = col && col.entity && col.entity.fields;
+
+	            return fields;
+	        }
 
 	        /**
 	         * [mock 根据集合名称、操作、参数，生产mock数据]
@@ -758,6 +784,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * @param  {[type]} doc     [操作参数]
 	         * @return {[type]}         [description]
 	         */
+
+	    }, {
+	        key: 'mock',
 	        value: function mock(colName, oper, doc) {
 	            // 获得集合相关配置
 	            var col = window.collectionConfig[colName];
@@ -765,14 +794,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var op = col && col[oper];
 	            // 获得集合操作返回值相关配置
 	            var ret = op && op.return;
-	            // 获取集合fields配置
-	            var mockFields = col && col.entity && col.entity.fields;
 	            // 获得集合操作mock结构
-	            var mockStr = op && op.structure || { "millis": 32, "code": "SUCCESS", "message": "操作成功", "entity": '' };
+	            var mockStr = op && op.structure || {
+	                "millis": 32,
+	                "code": "SUCCESS",
+	                "message": "操作成功",
+	                "entity": ''
+	            };
 	            // 获得集合操作mock结构数据存放字段
 	            var sp = Persist.getStoreParam(colName, oper);
 	            // 获取集合主键
 	            var key = Persist.getPrimaryKey(colName);
+	            // 获取集合fields配置
+	            var mockFields = Persist.getFields(colName, oper);
 
 	            // 如果没有return参数、return为null或者return为空对象
 	            if (!ret || $.isEmptyObject(ret)) {
@@ -1033,7 +1067,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            if (db && db.size > 0) {
 	                db.forEach(function (val, i) {
-	                    if (val[key] == data[key]) {
+	                    if (val[key] == (typeof data == 'string' ? data : data[key])) {
 	                        insert = false;
 
 	                        if (p == 'findOne') {
@@ -1045,7 +1079,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 
 	            if (p == 'findOne') {
-	                return $.extend({ 'isInsert': insert }, { 'extend': extend });
+	                return $.extend({
+	                    'isInsert': insert
+	                }, {
+	                    'extend': extend
+	                });
 	            }
 
 	            return insert;
@@ -1072,6 +1110,78 @@ return /******/ (function(modules) { // webpackBootstrap
 	                // 返回用户输入参数
 	                return ['', false];
 	            }
+	        }
+
+	        /**
+	         * [getTimeKey 需要进行时间转换的数据]
+	         * @param  {[type]} colName [集合名称]
+	         * @param  {[type]} oper [集合操作]
+	         * @return {[type]} [description]
+	         */
+
+	    }, {
+	        key: 'getTimeKey',
+	        value: function getTimeKey(colName, oper) {
+	            // 获取集合fields配置
+	            var fs = Persist.getFields(colName, oper);
+	            var keys = [];
+
+	            for (var i in fs) {
+	                if (_collectionUtils2.default.isObject(fs[i])) {
+	                    if (fs[i].type === 'time') {
+	                        keys.push(i);
+	                    }
+	                } else if (fs[i] === 'time') {
+	                    keys.push(i);
+	                }
+	            }
+
+	            return keys;
+	        }
+
+	        /**
+	         * [forKeyData 遍历数据key]
+	         * @param  {[type]} data [数据]
+	         * @param  {[type]} keys [时间keys]
+	         * @param  {[type]} fs [key配置]
+	         * @return {[type]} [description]
+	         */
+
+	    }, {
+	        key: 'forKeyData',
+	        value: function forKeyData(data, keys, fs) {
+	            for (var i in data) {
+	                if (_collectionUtils2.default.isObject(data[i])) {
+	                    Persist.forKeyData(data[i], keys, fs);
+	                } else {
+	                    for (var j in keys) {
+	                        if (i === keys[j]) {
+	                            data[i] = new Date(data[i]).toString(fs[i].format ? fs[i].format : 'yyyy-MM-dd');
+	                        }
+	                    }
+	                }
+	            }
+
+	            return data;
+	        }
+
+	        /**
+	         * [getTimeData 对数据进行时间转换]
+	         * @param  {[type]} colName [集合名称]
+	         * @param  {[type]} oper [集合操作]
+	         * @param  {[type]} data [数据]
+	         * @return {[type]} [description]
+	         */
+
+	    }, {
+	        key: 'getTimeData',
+	        value: function getTimeData(colName, oper, data) {
+	            // 获取集合fields配置
+	            var fs = Persist.getFields(colName, oper);
+	            // 获取需要进行时间转换的key列表
+	            var keys = Persist.getTimeKey(colName, oper);
+
+	            return Persist.forKeyData(data, keys, fs);
 	        }
 
 	        /**
@@ -1130,6 +1240,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情    
 	            return $.get(url, null, function (data) {
 	                if (data.code === 'SUCCESS') {
+	                    data = Persist.getTimeData(colName, p, data);
 	                    Persist.setFindOneData(colName, p, data);
 	                }
 	            });
@@ -1225,6 +1336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情
 	            return $.get(url, query, function (data) {
 	                if (data.code === 'SUCCESS') {
+	                    data = Persist.getTimeData(_this2.colName, p, data);
 	                    Persist.setFindData(_this2.colName, p, data);
 	                }
 	            });
@@ -1329,6 +1441,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情
 	            return $.post(Persist.getUrl(colName, p, doc, type), paramObj, function (data) {
 	                if (data.code === 'SUCCESS') {
+	                    data = Persist.getTimeData(colName, p, data);
 	                    Persist.setInsertData(colName, p, data, paramObj);
 	                }
 	            });
@@ -1354,7 +1467,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var insert = Persist.isInsert(colName, p, d, key);
 
 	            if (insert) {
-	                var one = $.extend({ "cacheTime": new Date().getTime() }, paramObj, _defineProperty({}, key, d[key]));
+	                var one = $.extend({
+	                    "cacheTime": new Date().getTime()
+	                }, paramObj, _defineProperty({}, key, typeof d == 'string' ? d : d[key]));
 
 	                var _db = window.db && window.db[colName] && window.db[colName].items;
 	                if (_db) {
@@ -1407,6 +1522,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情
 	            return $.put(Persist.getUrl(colName, p, param, type), paramObj, function (data) {
 	                if (data.code === 'SUCCESS') {
+	                    data = Persist.getTimeData(colName, p, data);
 	                    Persist.setUpdateData(colName, p, data, doc);
 	                }
 	            });
@@ -1476,6 +1592,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 执行ajax请求查询某集合数据详情
 	            return $.delete(Persist.getUrl(colName, p, param, type), null, function (data) {
 	                if (data.code === 'SUCCESS') {
+	                    data = Persist.getTimeData(colName, p, data);
 	                    data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
 	                }
 	            });
@@ -1553,13 +1670,15 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _mockConf = __webpack_require__(4);
+	var _collectionUtils = __webpack_require__(4);
+
+	var _collectionUtils2 = _interopRequireDefault(_collectionUtils);
+
+	var _mockConf = __webpack_require__(7);
 
 	var _mockConf2 = _interopRequireDefault(_mockConf);
 
 	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -1639,57 +1758,59 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var obj = JSON.parse(JSON.stringify(ret));
 	            // 如果返回配置是对象
 	            if ((typeof obj === 'undefined' ? 'undefined' : _typeof(obj)) === 'object') {
-	                var _ret = function () {
-	                    // 获取操作返回key数组
-	                    var attrArr = MockUtils.getKeyItems(obj);
-	                    // 长度级别数组
-	                    var levelArr = _mockConf2.default[MockUtils.mockLevel] || _mockConf2.default[MockUtils.level_1];
+	                // 长度级别数组
+	                var levelArr = _mockConf2.default[MockUtils.mockLevel] || _mockConf2.default[MockUtils.level_1];
 
-	                    // 遍历
-	                    attrArr.forEach(function (key, i) {
-	                        // 如果字段是数组
-	                        if ($.isArray(obj[key])) {
-	                            // 返回数组
-	                            var valArr = [];
-	                            // 数组随机长度
-	                            var len = MockUtils.getRandomlength(levelArr.array);
+	                MockUtils.getMockData(obj, levelArr, fields);
 
-	                            if (_typeof(obj[key][0]) === 'object') {
-	                                // 遍历
-	                                for (var n = 0; n < len; n++) {
-	                                    // 初始对象
-	                                    var temp = {};
-	                                    // 遍历
-	                                    for (var m in obj[key][0]) {
-	                                        // 数组内对象
-	                                        temp = $.extend(temp, _defineProperty({}, m, MockUtils.getItemValue(fields[m], levelArr)));
-	                                    }
-	                                    // 返回数组赋值
-	                                    valArr.push(temp);
-	                                }
-	                            } else {
-	                                // 遍历
-	                                for (var n = 0; n < len; n++) {
-	                                    // 返回数组赋值
-	                                    valArr.push(MockUtils.getItemValue(obj[key][0], levelArr));
-	                                }
-	                            }
-
-	                            // 赋值给字段
-	                            obj[key] = valArr;
-	                        } else {
-	                            // 其他情况字段赋值
-	                            obj[key] = MockUtils.getItemValue(fields[key], levelArr);
-	                        }
-	                    });
-
-	                    return {
-	                        v: obj
-	                    };
-	                }();
-
-	                if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+	                return obj;
 	            }
+	        }
+
+	        /**
+	         * [getMockData 遍历生产mock]
+	         * @param  {[type]} obj [数据]
+	         * @param  {[type]} levelArr [长度]
+	         * @param  {[type]} fields [key配置]
+	         * @return {[type]} [description]
+	         */
+
+	    }, {
+	        key: 'getMockData',
+	        value: function getMockData(obj, levelArr, fields) {
+	            // 获取操作返回key数组
+	            var attrArr = MockUtils.getKeyItems(obj);
+
+	            attrArr.forEach(function (key, i) {
+	                // 如果字段是数组
+	                if ($.isArray(obj[key])) {
+	                    // 返回数组
+	                    var valArr = [];
+	                    // 数组随机长度
+	                    var len = MockUtils.getRandomlength(levelArr.array);
+
+	                    if (_typeof(obj[key][0]) !== 'object') {
+	                        // 遍历
+	                        for (var n = 0; n < len; n++) {
+	                            // 返回数组赋值
+	                            valArr.push(MockUtils.getItemValue(obj[key][0], levelArr));
+	                        }
+	                    } else {
+	                        for (var m = 0; m < len; m++) {
+	                            var arr = JSON.parse(JSON.stringify(MockUtils.getMockData(obj[key][0], levelArr, fields)));
+	                            valArr[m] = arr;
+	                        }
+
+	                        // 赋值给字段
+	                        obj[key] = valArr;
+	                    }
+	                } else {
+	                    // 其他情况字段赋值
+	                    obj[key] = MockUtils.getItemValue(fields[key], levelArr);
+	                }
+	            });
+
+	            return obj;
 	        }
 
 	        /**
@@ -1719,7 +1840,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	                value = parseFloat(integer / 100).toFixed(2);
 	            } else if (type === 'time') {
 	                // 时间戳
-	                value = new Date().getTime();
+	                value = new Date().toString('yyyy-MM-dd');
+	            } else if (_collectionUtils2.default.isObject(type)) {
+	                // 时间戳
+	                if (type.type === 'time') {
+	                    value = new Date().toString(type.format);
+	                }
 	            } else if ($.isArray(type)) {
 	                var k = Math.floor(Math.random() * type.length);
 	                value = type[k];
@@ -1853,42 +1979,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 4 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", {
-	    value: true
-	});
-	/**
-	 * mock数据相关配置
-	 */
-	exports.default = {
-	    // 一级mock数据长度设置
-	    "level_1": {
-	        "en": [5, 50],
-	        "zh": [1, 20],
-	        "int": [1, 10],
-	        "array": [0, 20]
-	    },
-	    // 二级mock数据长度设置
-	    "level_2": {
-	        "en": [50, 100],
-	        "zh": [20, 80],
-	        "int": [10, 20],
-	        "array": [20, 80]
-	    },
-	    // 三级mock数据长度设置
-	    "level_3": {
-	        "en": [100, 200],
-	        "zh": [80, 150],
-	        "int": [20, 100],
-	        "array": [80, 150]
-	    }
-	};
-
-/***/ },
-/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1901,9 +1991,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _immutable = __webpack_require__(6);
+	var _immutable = __webpack_require__(5);
 
-	var _utils = __webpack_require__(7);
+	var _utils = __webpack_require__(6);
 
 	var _utils2 = _interopRequireDefault(_utils);
 
@@ -2273,13 +2363,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = CollectionUtils;
 
 /***/ },
-/* 6 */
+/* 5 */
 /***/ function(module, exports) {
 
-	module.exports = __WEBPACK_EXTERNAL_MODULE_6__;
+	module.exports = __WEBPACK_EXTERNAL_MODULE_5__;
 
 /***/ },
-/* 7 */
+/* 6 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -2292,7 +2382,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-	var _immutable = __webpack_require__(6);
+	var _immutable = __webpack_require__(5);
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -2464,6 +2554,42 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	Utils.key = 0;
 	exports.default = Utils;
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", {
+	    value: true
+	});
+	/**
+	 * mock数据相关配置
+	 */
+	exports.default = {
+	    // 一级mock数据长度设置
+	    "level_1": {
+	        "en": [5, 50],
+	        "zh": [1, 20],
+	        "int": [1, 10],
+	        "array": [0, 20]
+	    },
+	    // 二级mock数据长度设置
+	    "level_2": {
+	        "en": [50, 100],
+	        "zh": [20, 80],
+	        "int": [10, 20],
+	        "array": [20, 80]
+	    },
+	    // 三级mock数据长度设置
+	    "level_3": {
+	        "en": [100, 200],
+	        "zh": [80, 150],
+	        "int": [20, 100],
+	        "array": [80, 150]
+	    }
+	};
 
 /***/ },
 /* 8 */

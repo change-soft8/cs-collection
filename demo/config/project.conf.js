@@ -20,7 +20,10 @@ export default {
                 "projectStatus": "14001",
                 "projectImportanceLevel": "41001",
                 "projectIcon": "https://file.newtouch.com/yangyang/item_logo_4.png",
-                "projectTagList": [{ "tagId": "wherwjfpwp1", "systemFlag": "12" }],
+                "projectTagList": [{
+                    "tagId": "wherwjfpwp1",
+                    "systemFlag": "12"
+                }],
                 "projectMember": ['int'],
                 "members": 1,
                 "projectManagerLoginName": "shenjiafang",
@@ -116,8 +119,8 @@ export default {
             // 可直接规定长度，也可给值，按值的长度随机生成
             "projectId": 32
         }
-        /*//mock数据路径
-        "mockUrl": "mock/insert.json"*/
+    /*//mock数据路径
+    "mockUrl": "mock/insert.json"*/
     },
     //修改
     "update": {
@@ -134,18 +137,18 @@ export default {
     //删除
     "remove": {
         getUrl: (param) => {
-                return `/v2/project/${param}`
-            }
-            /*,
-                    //mock数据路径
-                    "mockUrl": "mock/success.json"*/
+            return `/v2/project/${param}`
+        }
+    /*,
+            //mock数据路径
+            "mockUrl": "mock/success.json"*/
     },
     // 过期
     "cacheTimeOut": 5184000,
     // 请求次数
     "requestNum": 5,
     // 实体字段配置，根据mock级别 + 数据类型 = mock属性长度
-    
+
     "entity": {
         // 实体主键
         "primaryKey": "projectId",
@@ -154,9 +157,9 @@ export default {
             "projectId": "string",
             "projectName": "string",
             "projectManager": "string",
-            "projectManagerIcon": "string",
+            "projectManagerIcon": ["/v2/project/picture/item_logo_1.png?maxWidth=48&maxHeight=48", "/v2/project/picture/item_logo_2.png?maxWidth=48&maxHeight=48"],
             "projectStatus": "string",
-            "projectImportanceLevel": "string",
+            "projectImportanceLevel": ["41001", "41003", "41004"], //数组里面选取一个值
             "projectIcon": "string",
             "members": "int",
             "projectManagerLoginName": "string",
@@ -164,7 +167,11 @@ export default {
             "projectNameForShirt": "string",
             "projectCode": "string",
             "commonFlag": "string",
-            "createTime": "time",
+            "createTime": {
+                "type": "time",
+                "format": "yyyy-MM-dd" //时间格式
+            },
+            "endTime": "time", //默认时间格式为年-月-日，例如：2016-11-29
             "totalPrice": "money",
             "tagId": "string",
             "systemFlag": "int"

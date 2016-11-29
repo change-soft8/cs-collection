@@ -51,7 +51,9 @@ export default class Collection {
         }
 
         // 存放组件
-        this.widgets.push({ widget: w });
+        this.widgets.push({
+            widget: w
+        });
 
         return w;
     }
@@ -66,11 +68,18 @@ export default class Collection {
         let db = window.db && window.db[colName] && window.db[colName].items;
 
         for (var i = 0; i < w.length; i++) {
-            let query = w[i].query;
-            let match = Utils.filterListKey(db, query);
+            if (w[i].hasOwnProperty("query")) {
+                let query = w[i].query;
 
-            if (match) {
-                PubSub.publish(w[i].widget.pubsubKey, match);
+                if (Utils.isEmpty(query)) {
+                    PubSub.publish(w[i].widget.pubsubKey, db);
+                } else {
+                    let match = Utils.filterListKey(db, query);
+
+                    if (match) {
+                        PubSub.publish(w[i].widget.pubsubKey, match);
+                    }
+                }
             }
         }
     }
@@ -125,11 +134,11 @@ export default class Collection {
         // 初始化请求数据
         let query = {};
         // 不符合查询规则
-        if (doc && typeof(doc) == "object") {
+        if (doc && typeof (doc) == "object") {
             // 如果传入数据为 object 类型
             for (let key in doc) {
                 let value = doc[key];
-                if (typeof(value) != "object") {
+                if (typeof (value) != "object") {
                     // 等值搜索
                     query[key] = value;
                 } else {
@@ -149,7 +158,7 @@ export default class Collection {
                                 } else {
                                     return false;
                                 }
-                            } catch (e) {
+                            } catch ( e ) {
                                 // 查询器暂不支持;
                                 return false;
                             }
@@ -177,7 +186,7 @@ export default class Collection {
             // mock数据
             let mock = Persist.findOne.bind(this)(this.colName, doc, type);
             if (mock) {
-                if (typeof(mock.then) === 'function') {
+                if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey, data.nowItems);
@@ -206,11 +215,11 @@ export default class Collection {
         // 初始化请求数据
         let query = {};
         // 不符合查询规则
-        if (doc && typeof(doc) == "object") {
+        if (doc && typeof (doc) == "object") {
             // 如果传入数据为 object 类型
             for (let key in doc) {
                 let value = doc[key];
-                if (typeof(value) != "object") {
+                if (typeof (value) != "object") {
                     // 等值搜索
                     query[key] = value;
                 } else {
@@ -230,7 +239,7 @@ export default class Collection {
                                 } else {
                                     return false;
                                 }
-                            } catch (e) {
+                            } catch ( e ) {
                                 // 查询器暂不支持;
                                 return false;
                             }
@@ -258,7 +267,7 @@ export default class Collection {
             // mock数据
             let mock = Persist.find.bind(this)(doc, query, val, type);
             if (mock) {
-                if (typeof(mock.then) === 'function') {
+                if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey, data.nowItems);
@@ -296,7 +305,7 @@ export default class Collection {
             // mock
             let mock = Persist.insert.bind(this)(this.colName, doc, type);
             if (mock) {
-                if (typeof(mock.then) === 'function') {
+                if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey, data.nowItems);
@@ -348,7 +357,7 @@ export default class Collection {
             // mock
             let mock = Persist.update.bind(this)(this.colName, doc, type);
             if (mock) {
-                if (typeof(mock.then) === 'function') {
+                if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey, data.nowItems);
@@ -382,7 +391,7 @@ export default class Collection {
             // mock
             let mock = Persist.remove.bind(this)(this.colName, doc, type);
             if (mock) {
-                if (typeof(mock.then) === 'function') {
+                if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
                         // 集合变更，发布事件
                         PubSub.publish(this.pubsubKey, data.nowItems);
