@@ -733,11 +733,21 @@ export default class Persist {
         let insert = Persist.isInsert(colName, p, d, key);
 
         if (insert) {
-            let one = $.extend({
+            var one = $.extend({
                 "cacheTime": new Date().getTime()
-            }, paramObj, {
-                [key]: typeof d == 'string' ? d : d[key]
-            });
+            }, paramObj);
+
+            if (typeof d === 'string') {
+                one = $.extend(one, {
+                    [key]: d
+                });
+            } else {
+                for (var i in d) {
+                    one = $.extend(one, {
+                        [i]: d[i]
+                    });
+                }
+            }
 
             let db = window.db && window.db[colName] && window.db[colName].items;
             if (db) {
@@ -849,7 +859,7 @@ export default class Persist {
         }
 
         // 执行ajax请求查询某集合数据详情
-        return $.delete(Persist.getUrl(colName, p, param, type), null, (data) => {
+        return $.delete(Persist.getUrl(colName, p, doc, type), null, (data) => {
             if (data.code === 'SUCCESS') {
                 data = Persist.getTimeData(colName, p, data);
                 data.nowItems = Map(Utils.removeData(colName, param, key));

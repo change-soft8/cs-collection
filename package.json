@@ -1,6 +1,6 @@
 {
   "name": "cs-collection",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "集合组件",
   "main": "build/localstorage.js",
   "scripts": {
@@ -26,6 +26,6 @@
   "dependencies": {
     "immutable": "^3.8.1",
     "pubsub-js": "^1.5.3",
-    "datejs" : "^1.0.0"
+    "datejs" : "^1.0.0-rc3"
   }
 }

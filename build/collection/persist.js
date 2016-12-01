@@ -793,7 +793,15 @@ var Persist = function () {
             if (insert) {
                 var one = $.extend({
                     "cacheTime": new Date().getTime()
-                }, paramObj, _defineProperty({}, key, typeof d == 'string' ? d : d[key]));
+                }, paramObj);
+
+                if (typeof d === 'string') {
+                    one = $.extend(one, _defineProperty({}, key, d));
+                } else {
+                    for (var i in d) {
+                        one = $.extend(one, _defineProperty({}, i, d[i]));
+                    }
+                }
 
                 var _db = window.db && window.db[colName] && window.db[colName].items;
                 if (_db) {
@@ -914,7 +922,7 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情
-            return $.delete(Persist.getUrl(colName, p, param, type), null, function (data) {
+            return $.delete(Persist.getUrl(colName, p, doc, type), null, function (data) {
                 if (data.code === 'SUCCESS') {
                     data = Persist.getTimeData(colName, p, data);
                     data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
