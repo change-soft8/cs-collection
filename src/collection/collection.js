@@ -177,14 +177,14 @@ export default class Collection {
         let w = db[this.colName].widgets;
         for (var i = 0; i < w.length; i++) {
             if (w[i].widget.id == this.id) {
-                w[i].query = doc;
+                w[i].query = query;
             }
         }
 
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.findOne.bind(this)(this.colName, doc, type);
+            let mock = Persist.findOne.bind(this)(this.colName, doc, query, type);
             if (mock) {
                 if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -197,7 +197,7 @@ export default class Collection {
                 }
             }
         } else {
-            return Persist.findOne.bind(this)(this.colName, doc, type).then(((data) => {
+            return Persist.findOne.bind(this)(this.colName, doc, query, type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));
@@ -207,11 +207,11 @@ export default class Collection {
     /**
      * [find 根据查询器，查询集合]
      * @param  {[type]} doc   [查询器]
-     * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
+     * @param  {[type]} param   [配置getUrl方法所需外部传入的param]
      * @param  {[type]} type [url类型]
      * @return {[type]}       [description]
      */
-    find(doc, val, type) {
+    find(doc, param, type) {
         // 初始化请求数据
         let query = {};
         // 不符合查询规则
@@ -265,7 +265,7 @@ export default class Collection {
         // 调用持久化对象 查询 数据详情
         if (Persist.isMock) {
             // mock数据
-            let mock = Persist.find.bind(this)(doc, query, val, type);
+            let mock = Persist.find.bind(this)(doc, query, param, type);
             if (mock) {
                 if (typeof (mock.then) === 'function') {
                     return mock.then(((data) => {
@@ -284,7 +284,7 @@ export default class Collection {
 
         } else {
             // 调用持久化对象 查询 数据详情
-            return Persist.find.bind(this)(doc, query, val, type).then(((data) => {
+            return Persist.find.bind(this)(doc, query, param, type).then(((data) => {
                 // 集合变更发布事件
                 PubSub.publish(this.pubsubKey, data.nowItems);
             }).bind(this));

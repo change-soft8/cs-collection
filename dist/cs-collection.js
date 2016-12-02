@@ -313,14 +313,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var w = db[this.colName].widgets;
 	            for (var i = 0; i < w.length; i++) {
 	                if (w[i].widget.id == this.id) {
-	                    w[i].query = doc;
+	                    w[i].query = query;
 	                }
 	            }
 
 	            // 调用持久化对象 查询 数据详情
 	            if (_persist2.default.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, type);
+	                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, query, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
@@ -333,7 +333,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            } else {
-	                return _persist2.default.findOne.bind(this)(this.colName, doc, type).then(function (data) {
+	                return _persist2.default.findOne.bind(this)(this.colName, doc, query, type).then(function (data) {
 	                    // 集合变更发布事件
 	                    _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
 	                }.bind(this));
@@ -343,14 +343,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        /**
 	         * [find 根据查询器，查询集合]
 	         * @param  {[type]} doc   [查询器]
-	         * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
+	         * @param  {[type]} param   [配置getUrl方法所需外部传入的param]
 	         * @param  {[type]} type [url类型]
 	         * @return {[type]}       [description]
 	         */
 
 	    }, {
 	        key: 'find',
-	        value: function find(doc, val, type) {
+	        value: function find(doc, param, type) {
 	            var _this2 = this;
 
 	            // 初始化请求数据
@@ -406,7 +406,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 调用持久化对象 查询 数据详情
 	            if (_persist2.default.isMock) {
 	                // mock数据
-	                var mock = _persist2.default.find.bind(this)(doc, query, val, type);
+	                var mock = _persist2.default.find.bind(this)(doc, query, param, type);
 	                if (mock) {
 	                    if (typeof mock.then === 'function') {
 	                        return mock.then(function (data) {
@@ -424,7 +424,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            } else {
 	                // 调用持久化对象 查询 数据详情
-	                return _persist2.default.find.bind(this)(doc, query, val, type).then(function (data) {
+	                return _persist2.default.find.bind(this)(doc, query, param, type).then(function (data) {
 	                    // 集合变更发布事件
 	                    _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
 	                }.bind(this));
@@ -1188,13 +1188,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [findOne 查询集合某数据详情]
 	         * @param  {[type]} colName [集合名称]
 	         * @param  {[type]} doc     [单条数据]
+	         * @param  {[type]} query   [解析后数据]
+	         * @param  {[type]} params  [外部传入url所需参数]
 	         * @param  {[type]} type [url类型]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'findOne',
-	        value: function findOne(colName, doc, type) {
+	        value: function findOne(colName, doc, query, params, type) {
 	            var _this = this;
 
 	            // 操作名称
@@ -1234,11 +1236,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (mongo) {
 	                var url = '/' + colName + '?query=' + doc;
 	            } else {
-	                var url = Persist.getUrl(colName, 'findOne', param, type);
+	                var url = Persist.getUrl(colName, p, params, type);
 	            }
 
 	            // 执行ajax请求查询某集合数据详情    
-	            return $.get(url, null, function (data) {
+	            return $.get(url, query, function (data) {
 	                if (data.code === 'SUCCESS') {
 	                    data = Persist.getTimeData(colName, p, data);
 	                    Persist.setFindOneData(colName, p, data);
@@ -1290,13 +1292,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	         * [find 查询数据集合]
 	         * @param  {[type]} doc     [数据参数]
 	         * @param  {[type]} query   [解析后的参数]
+	         * @param  {[type]} params  [外部传入url所需参数]
 	         * @param  {[type]} type    [url类型]
 	         * @return {[type]}         [description]
 	         */
 
 	    }, {
 	        key: 'find',
-	        value: function find(doc, query, val, type) {
+	        value: function find(doc, query, params, type) {
 	            var _this2 = this;
 
 	            // 操作名称
@@ -1330,7 +1333,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (mongo) {
 	                var url = '/' + this.colName + '?query=' + doc;
 	            } else {
-	                var url = Persist.getUrl(this.colName, p, val, type);
+	                var url = Persist.getUrl(this.colName, p, params, type);
 	            }
 
 	            // 执行ajax请求查询某集合数据详情
@@ -1528,7 +1531,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            // 获取主键值
 	            var param = Persist.getPrimaryKeyValue(colName, doc);
 	            // 执行ajax请求查询某集合数据详情
-	            return $.put(Persist.getUrl(colName, p, param, type), paramObj, function (data) {
+	            return $.put(Persist.getUrl(colName, p, doc, type), paramObj, function (data) {
 	                if (data.code === 'SUCCESS') {
 	                    data = Persist.getTimeData(colName, p, data);
 	                    Persist.setUpdateData(colName, p, data, doc);
@@ -1598,7 +1601,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 
 	            // 执行ajax请求查询某集合数据详情
-	            return $.delete(Persist.getUrl(colName, p, doc, type), null, function (data) {
+	            return $.delete(Persist.getUrl(colName, p, doc, type), doc, function (data) {
 	                if (data.code === 'SUCCESS') {
 	                    data = Persist.getTimeData(colName, p, data);
 	                    data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));
@@ -1849,7 +1852,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            } else if (type === 'time') {
 	                // 时间戳
 	                value = new Date().toString('yyyy-MM-dd');
-	            } else if (_collectionUtils2.default.isObject(type)) {
+	            } else if (_collectionUtils2.default.isObject(type) && !$.isArray(type)) {
 	                // 时间戳
 	                if (type.type === 'time') {
 	                    value = new Date().toString(type.format);

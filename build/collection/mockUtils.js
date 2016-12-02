@@ -179,7 +179,7 @@ var MockUtils = function () {
             } else if (type === 'time') {
                 // 时间戳
                 value = new Date().toString('yyyy-MM-dd');
-            } else if (_collectionUtils2.default.isObject(type)) {
+            } else if (_collectionUtils2.default.isObject(type) && !$.isArray(type)) {
                 // 时间戳
                 if (type.type === 'time') {
                     value = new Date().toString(type.format);

@@ -160,7 +160,7 @@ export default class MockUtils {
         } else if (type === 'time') {
             // 时间戳
             value = new Date().toString('yyyy-MM-dd');
-        } else if (Utils.isObject(type)) {
+        } else if (Utils.isObject(type) && !$.isArray(type)) {
             // 时间戳
             if (type.type === 'time') {
                 value = new Date().toString(type.format);

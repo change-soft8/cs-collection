@@ -512,13 +512,15 @@ var Persist = function () {
          * [findOne 查询集合某数据详情]
          * @param  {[type]} colName [集合名称]
          * @param  {[type]} doc     [单条数据]
+         * @param  {[type]} query   [解析后数据]
+         * @param  {[type]} params  [外部传入url所需参数]
          * @param  {[type]} type [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'findOne',
-        value: function findOne(colName, doc, type) {
+        value: function findOne(colName, doc, query, params, type) {
             var _this = this;
 
             // 操作名称
@@ -558,11 +560,11 @@ var Persist = function () {
             if (mongo) {
                 var url = '/' + colName + '?query=' + doc;
             } else {
-                var url = Persist.getUrl(colName, 'findOne', param, type);
+                var url = Persist.getUrl(colName, p, params, type);
             }
 
             // 执行ajax请求查询某集合数据详情    
-            return $.get(url, null, function (data) {
+            return $.get(url, query, function (data) {
                 if (data.code === 'SUCCESS') {
                     data = Persist.getTimeData(colName, p, data);
                     Persist.setFindOneData(colName, p, data);
@@ -614,13 +616,14 @@ var Persist = function () {
          * [find 查询数据集合]
          * @param  {[type]} doc     [数据参数]
          * @param  {[type]} query   [解析后的参数]
+         * @param  {[type]} params  [外部传入url所需参数]
          * @param  {[type]} type    [url类型]
          * @return {[type]}         [description]
          */
 
     }, {
         key: 'find',
-        value: function find(doc, query, val, type) {
+        value: function find(doc, query, params, type) {
             var _this2 = this;
 
             // 操作名称
@@ -654,7 +657,7 @@ var Persist = function () {
             if (mongo) {
                 var url = '/' + this.colName + '?query=' + doc;
             } else {
-                var url = Persist.getUrl(this.colName, p, val, type);
+                var url = Persist.getUrl(this.colName, p, params, type);
             }
 
             // 执行ajax请求查询某集合数据详情
@@ -852,7 +855,7 @@ var Persist = function () {
             // 获取主键值
             var param = Persist.getPrimaryKeyValue(colName, doc);
             // 执行ajax请求查询某集合数据详情
-            return $.put(Persist.getUrl(colName, p, param, type), paramObj, function (data) {
+            return $.put(Persist.getUrl(colName, p, doc, type), paramObj, function (data) {
                 if (data.code === 'SUCCESS') {
                     data = Persist.getTimeData(colName, p, data);
                     Persist.setUpdateData(colName, p, data, doc);
@@ -922,7 +925,7 @@ var Persist = function () {
             }
 
             // 执行ajax请求查询某集合数据详情
-            return $.delete(Persist.getUrl(colName, p, doc, type), null, function (data) {
+            return $.delete(Persist.getUrl(colName, p, doc, type), doc, function (data) {
                 if (data.code === 'SUCCESS') {
                     data = Persist.getTimeData(colName, p, data);
                     data.nowItems = (0, _immutable.Map)(_collectionUtils2.default.removeData(colName, param, key));

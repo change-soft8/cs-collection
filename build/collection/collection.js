@@ -155,14 +155,14 @@ var Collection = function () {
             var w = db[this.colName].widgets;
             for (var i = 0; i < w.length; i++) {
                 if (w[i].widget.id == this.id) {
-                    w[i].query = doc;
+                    w[i].query = query;
                 }
             }
 
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, type);
+                var mock = _persist2.default.findOne.bind(this)(this.colName, doc, query, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
@@ -175,7 +175,7 @@ var Collection = function () {
                     }
                 }
             } else {
-                return _persist2.default.findOne.bind(this)(this.colName, doc, type).then(function (data) {
+                return _persist2.default.findOne.bind(this)(this.colName, doc, query, type).then(function (data) {
                     // 集合变更发布事件
                     _pubsubJs2.default.publish(_this.pubsubKey, data.nowItems);
                 }.bind(this));
@@ -185,14 +185,14 @@ var Collection = function () {
         /**
          * [find 根据查询器，查询集合]
          * @param  {[type]} doc   [查询器]
-         * @param  {[type]} val   [配置getUrl方法所需外部传入的param]
+         * @param  {[type]} param   [配置getUrl方法所需外部传入的param]
          * @param  {[type]} type [url类型]
          * @return {[type]}       [description]
          */
 
     }, {
         key: 'find',
-        value: function find(doc, val, type) {
+        value: function find(doc, param, type) {
             var _this2 = this;
 
             // 初始化请求数据
@@ -248,7 +248,7 @@ var Collection = function () {
             // 调用持久化对象 查询 数据详情
             if (_persist2.default.isMock) {
                 // mock数据
-                var mock = _persist2.default.find.bind(this)(doc, query, val, type);
+                var mock = _persist2.default.find.bind(this)(doc, query, param, type);
                 if (mock) {
                     if (typeof mock.then === 'function') {
                         return mock.then(function (data) {
@@ -266,7 +266,7 @@ var Collection = function () {
                 }
             } else {
                 // 调用持久化对象 查询 数据详情
-                return _persist2.default.find.bind(this)(doc, query, val, type).then(function (data) {
+                return _persist2.default.find.bind(this)(doc, query, param, type).then(function (data) {
                     // 集合变更发布事件
                     _pubsubJs2.default.publish(_this2.pubsubKey, data.nowItems);
                 }.bind(this));

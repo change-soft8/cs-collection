@@ -476,10 +476,12 @@ export default class Persist {
      * [findOne 查询集合某数据详情]
      * @param  {[type]} colName [集合名称]
      * @param  {[type]} doc     [单条数据]
+     * @param  {[type]} query   [解析后数据]
+     * @param  {[type]} params  [外部传入url所需参数]
      * @param  {[type]} type [url类型]
      * @return {[type]}         [description]
      */
-    static findOne(colName, doc, type) {
+    static findOne(colName, doc, query, params, type) {
         // 操作名称
         let p = 'findOne';
 
@@ -517,11 +519,11 @@ export default class Persist {
         if (mongo) {
             var url = `/${colName}?query=${doc}`;
         } else {
-            var url = Persist.getUrl(colName, 'findOne', param, type);
+            var url = Persist.getUrl(colName, p, params, type);
         }
 
         // 执行ajax请求查询某集合数据详情    
-        return $.get(url, null, (data) => {
+        return $.get(url, query, (data) => {
             if (data.code === 'SUCCESS') {
                 data = Persist.getTimeData(colName, p, data);
                 Persist.setFindOneData(colName, p, data);
@@ -570,10 +572,11 @@ export default class Persist {
      * [find 查询数据集合]
      * @param  {[type]} doc     [数据参数]
      * @param  {[type]} query   [解析后的参数]
+     * @param  {[type]} params  [外部传入url所需参数]
      * @param  {[type]} type    [url类型]
      * @return {[type]}         [description]
      */
-    static find(doc, query, val, type) {
+    static find(doc, query, params, type) {
         // 操作名称
         let p = 'find';
 
@@ -605,7 +608,7 @@ export default class Persist {
         if (mongo) {
             var url = `/${this.colName}?query=${doc}`;
         } else {
-            var url = Persist.getUrl(this.colName, p, val, type);
+            var url = Persist.getUrl(this.colName, p, params, type);
         }
 
         // 执行ajax请求查询某集合数据详情
@@ -795,7 +798,7 @@ export default class Persist {
         // 获取主键值
         let param = Persist.getPrimaryKeyValue(colName, doc);
         // 执行ajax请求查询某集合数据详情
-        return $.put(Persist.getUrl(colName, p, param, type), paramObj, (data) => {
+        return $.put(Persist.getUrl(colName, p, doc, type), paramObj, (data) => {
             if (data.code === 'SUCCESS') {
                 data = Persist.getTimeData(colName, p, data);
                 Persist.setUpdateData(colName, p, data, doc);
@@ -859,7 +862,7 @@ export default class Persist {
         }
 
         // 执行ajax请求查询某集合数据详情
-        return $.delete(Persist.getUrl(colName, p, doc, type), null, (data) => {
+        return $.delete(Persist.getUrl(colName, p, doc, type), doc, (data) => {
             if (data.code === 'SUCCESS') {
                 data = Persist.getTimeData(colName, p, data);
                 data.nowItems = Map(Utils.removeData(colName, param, key));
